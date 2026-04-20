@@ -387,7 +387,7 @@ function CatalogCard({
   return (
     <div
       onClick={onClick}
-      className="group relative bg-gradient-to-b from-stone-950/90 via-stone-900/80 to-stone-950/95 border border-amber-900/50 hover:border-amber-500/60 rounded-xl overflow-hidden cursor-pointer hover:shadow-[0_0_18px_-4px_rgba(251,191,36,0.45)] transition-all"
+      className="group relative h-full flex flex-col bg-gradient-to-b from-stone-950/90 via-stone-900/80 to-stone-950/95 border border-amber-900/50 hover:border-amber-500/60 rounded-xl overflow-hidden cursor-pointer hover:shadow-[0_0_18px_-4px_rgba(251,191,36,0.45)] transition-all"
     >
       <div className="relative w-full aspect-[3/4] flex items-center justify-center bg-gradient-to-br from-stone-900 to-stone-950">
         {hasValidImage ? (
@@ -474,8 +474,11 @@ function CatalogCard({
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-stone-950/85 to-transparent z-[2]" />
       </div>
 
-      <div className="p-3 border-t border-amber-900/30 space-y-2">
-        <h3 className="font-serif font-semibold text-amber-100 line-clamp-1 text-sm leading-snug">
+      <div className="p-3 border-t border-amber-900/30 flex-1 flex flex-col space-y-2">
+        <h3
+          className="font-serif font-semibold text-amber-100 text-sm leading-snug break-words"
+          style={{ minHeight: '2.75em' }}
+        >
           {game.title}
         </h3>
 
@@ -485,7 +488,7 @@ function CatalogCard({
           </p>
         )}
 
-        <div className="flex flex-wrap gap-2 text-[11px] text-stone-400">
+        <div className="mt-auto flex flex-wrap gap-2 text-[11px] text-stone-400">
           {game.minPlayers !== undefined && game.maxPlayers !== undefined && (
             <div className="flex items-center gap-1">
               <Users className="w-3 h-3 text-amber-500/80" />

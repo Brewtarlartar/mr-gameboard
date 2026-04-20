@@ -53,7 +53,7 @@ export default function GameCard({
       animate={{ opacity: isRemoving ? 0 : 1, y: 0, scale: isRemoving ? 0.9 : 1 }}
       whileHover={{ scale: 1.02, y: -2 }}
       transition={{ duration: 0.2 }}
-      className="relative bg-gradient-to-b from-stone-950/90 via-stone-900/80 to-stone-950/95 border border-amber-900/50 hover:border-amber-500/60 rounded-xl overflow-hidden cursor-pointer group hover:shadow-[0_0_18px_-4px_rgba(251,191,36,0.45)] transition-all"
+      className="relative h-full flex flex-col bg-gradient-to-b from-stone-950/90 via-stone-900/80 to-stone-950/95 border border-amber-900/50 hover:border-amber-500/60 rounded-xl overflow-hidden cursor-pointer group hover:shadow-[0_0_18px_-4px_rgba(251,191,36,0.45)] transition-all"
       onClick={() => onSelect(game)}
     >
       <div className="relative w-full aspect-[3/4] flex items-center justify-center bg-gradient-to-br from-stone-900 to-stone-950">
@@ -138,12 +138,15 @@ export default function GameCard({
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-stone-950/85 to-transparent" />
       </div>
 
-      <div className="p-3 border-t border-amber-900/30">
-        <h3 className="font-serif font-semibold text-amber-100 mb-2 line-clamp-2 text-sm leading-snug">
+      <div className="p-3 border-t border-amber-900/30 flex-1 flex flex-col">
+        <h3
+          className="font-serif font-semibold text-amber-100 mb-2 text-sm leading-snug break-words"
+          style={{ minHeight: '2.75em' }}
+        >
           {game.name}
         </h3>
 
-        <div className="flex flex-wrap gap-2 text-[11px] text-stone-400">
+        <div className="mt-auto flex flex-wrap gap-2 text-[11px] text-stone-400">
           {game.minPlayers !== undefined && game.maxPlayers !== undefined && (
             <div className="flex items-center gap-1">
               <Users className="w-3 h-3 text-amber-500/80" />
