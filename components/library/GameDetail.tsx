@@ -529,16 +529,15 @@ export default function GameDetail({
                   )}
 
                   {/* External links */}
-                  <section className="flex flex-wrap gap-2 pt-2 border-t border-amber-900/30">
+                  <section className="grid grid-cols-2 gap-2 sm:gap-3 pt-2 border-t border-amber-900/30">
                     <a
                       href={amazonUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 px-3 py-2 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/40 text-amber-200 rounded-lg transition-colors text-sm"
+                      className="flex items-center justify-center gap-2 px-4 py-2.5 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-100 rounded-lg font-serif font-semibold text-sm transition-colors"
                     >
                       <ShoppingCart className="w-4 h-4" />
                       <span>Buy on Amazon</span>
-                      <ExternalLink className="w-3 h-3" />
                     </a>
 
                     {game.bggId && (
@@ -546,10 +545,10 @@ export default function GameDetail({
                         href={`https://boardgamegeek.com/boardgame/${game.bggId}`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 px-3 py-2 bg-stone-900/70 hover:bg-stone-800 border border-amber-900/50 text-stone-200 rounded-lg transition-colors text-sm"
+                        className="flex items-center justify-center gap-2 px-4 py-2.5 bg-stone-800/70 hover:bg-stone-700/70 border border-amber-900/40 text-amber-100 rounded-lg font-serif font-semibold text-sm transition-colors"
                       >
+                        <ExternalLink className="w-4 h-4" />
                         <span>View on BGG</span>
-                        <ExternalLink className="w-3 h-3" />
                       </a>
                     )}
 
@@ -563,7 +562,7 @@ export default function GameDetail({
                           onRemove(game.id);
                           onClose();
                         }}
-                        className="inline-flex items-center gap-2 px-3 py-2 bg-red-950/60 hover:bg-red-900/70 border border-red-800/60 text-red-200 rounded-lg transition-colors text-sm ml-auto"
+                        className="col-span-2 flex items-center justify-center gap-2 px-4 py-2.5 bg-red-900/30 hover:bg-red-900/50 border border-red-700/50 text-red-200 rounded-lg font-serif font-semibold text-sm transition-colors"
                         aria-label="Remove from library"
                       >
                         <Trash2 className="w-4 h-4" />

@@ -13,11 +13,13 @@ import BrowseCatalog from '@/components/library/BrowseCatalog';
 import CustomGameForm from '@/components/library/CustomGameForm';
 import CompareGamesModal from '@/components/social/CompareGamesModal';
 import OracleChoiceModal from '@/components/library/OracleChoiceModal';
+import WishlistShelf from '@/components/library/WishlistShelf';
+import { useWishlistStore } from '@/lib/store/wishlistStore';
 import { initializeResearchAgent, getTrendingData } from '@/lib/agents/research/scheduler';
 import { generateCategories } from '@/lib/agents/library/categories';
 import { enrichGamesWithTrending } from '@/lib/agents/library/sync';
 
-type LibraryFilter = 'all' | 'favorites';
+type LibraryFilter = 'all' | 'favorites' | 'wishlist';
 
 export default function LibraryPage() {
   const [selectedGame, setSelectedGame] = useState<Game | null>(null);
@@ -31,6 +33,7 @@ export default function LibraryPage() {
   const [filter, setFilter] = useState<LibraryFilter>('all');
 
   const { games, favorites, loadLibrary, addGame, removeGame, toggleFavorite, autoEnrichLibrary } = useGameStore();
+  const wishlist = useWishlistStore((s) => s.wishlist);
 
   useEffect(() => {
     loadLibrary();
@@ -212,9 +215,12 @@ export default function LibraryPage() {
         <Filter className="w-4 h-4 text-amber-500/70" />
         {filterButton('all', `All (${games.length})`)}
         {filterButton('favorites', `Favorites (${favorites.length})`)}
+        {filterButton('wishlist', `Wishlist (${wishlist.length})`)}
       </div>
 
-      {games.length === 0 ? (
+      {filter === 'wishlist' ? (
+        <WishlistShelf />
+      ) : games.length === 0 ? (
         <>
           <div className="bg-gradient-to-b from-stone-900/70 to-stone-950/80 border border-amber-900/50 rounded-2xl p-10 sm:p-12 text-center shadow-lg shadow-black/30">
             <div className="text-6xl mb-4">🎲</div>

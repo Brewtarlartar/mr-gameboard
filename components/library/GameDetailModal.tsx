@@ -20,6 +20,7 @@ import {
   User,
   ShoppingCart,
   Heart,
+  ExternalLink,
 } from 'lucide-react';
 import { SeedGame } from '@/types/seedGame';
 import { useGameStore } from '@/lib/store/gameStore';
@@ -314,11 +315,11 @@ export default function GameDetailModal({
                   </div>
 
                   {/* Action buttons */}
-                  <div className="flex flex-wrap gap-2 sm:gap-3">
+                  <div className="grid grid-cols-2 gap-2 sm:gap-3">
                     {isOwned ? (
                       <button
                         onClick={handleRemoveFromCollection}
-                        className="flex items-center gap-2 px-4 py-2.5 bg-red-900/30 hover:bg-red-900/50 border border-red-700/50 text-red-200 rounded-lg font-serif text-sm transition-colors"
+                        className="col-span-2 flex items-center justify-center gap-2 px-4 py-2.5 bg-red-900/30 hover:bg-red-900/50 border border-red-700/50 text-red-200 rounded-lg font-serif font-semibold text-sm transition-colors"
                       >
                         <Trash2 className="w-4 h-4" />
                         Remove from Library
@@ -328,7 +329,7 @@ export default function GameDetailModal({
                         <button
                           onClick={handleAddToCollection}
                           disabled={isAdding}
-                          className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-b from-amber-500 to-amber-700 hover:from-amber-400 hover:to-amber-600 disabled:opacity-60 border border-amber-400/40 text-stone-950 rounded-lg font-serif font-semibold text-sm shadow-md shadow-amber-900/30 transition-colors"
+                          className="flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-b from-amber-500 to-amber-700 hover:from-amber-400 hover:to-amber-600 disabled:opacity-60 border border-amber-400/40 text-stone-950 rounded-lg font-serif font-semibold text-sm shadow-md shadow-amber-900/30 transition-colors"
                         >
                           {isAdding ? (
                             <Check className="w-4 h-4" />
@@ -340,7 +341,7 @@ export default function GameDetailModal({
 
                         <button
                           onClick={handleToggleWishlist}
-                          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border font-serif text-sm transition-colors ${
+                          className={`flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border font-serif font-semibold text-sm transition-colors ${
                             inWishlist
                               ? 'bg-rose-900/30 hover:bg-rose-900/50 border-rose-700/50 text-rose-200'
                               : 'bg-stone-800/70 hover:bg-stone-700/70 border-amber-900/40 text-amber-100'
@@ -368,7 +369,7 @@ export default function GameDetailModal({
                           'noopener,noreferrer'
                         );
                       }}
-                      className="flex items-center gap-2 px-4 py-2.5 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-100 rounded-lg font-serif text-sm transition-colors"
+                      className="flex items-center justify-center gap-2 px-4 py-2.5 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-100 rounded-lg font-serif font-semibold text-sm transition-colors"
                     >
                       <ShoppingCart className="w-4 h-4" />
                       Buy on Amazon
@@ -383,8 +384,9 @@ export default function GameDetailModal({
                           'noopener,noreferrer'
                         );
                       }}
-                      className="flex items-center gap-2 px-3 py-2.5 bg-stone-800/70 hover:bg-stone-700/70 border border-amber-900/40 text-amber-200/80 hover:text-amber-100 text-sm font-serif rounded-lg transition-colors"
+                      className="flex items-center justify-center gap-2 px-4 py-2.5 bg-stone-800/70 hover:bg-stone-700/70 border border-amber-900/40 text-amber-100 rounded-lg font-serif font-semibold text-sm transition-colors"
                     >
+                      <ExternalLink className="w-4 h-4" />
                       View on BGG
                     </button>
                   </div>
