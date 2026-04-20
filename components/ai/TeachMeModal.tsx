@@ -385,7 +385,7 @@ export default function TeachMeModal({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-black/75 backdrop-blur-sm flex items-stretch justify-center sm:items-center sm:p-4"
+            className="fixed inset-0 z-[10050] bg-black/75 backdrop-blur-sm flex items-stretch justify-center sm:items-center sm:p-4"
             onClick={handleClosePlan}
             style={{
               paddingTop: 'calc(env(safe-area-inset-top, 0px) + 12px)',

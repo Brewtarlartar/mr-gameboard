@@ -56,12 +56,12 @@ export default function StrategyModal({
     };
   }, []);
 
-  const canSubmit = gameName.trim().length > 0 && faction.trim().length > 0 && !isStreaming;
+  const canSubmit = gameName.trim().length > 0 && !isStreaming;
 
   const handleGenerate = async () => {
     const g = gameName.trim();
     const f = faction.trim();
-    if (!g || !f) return;
+    if (!g) return;
 
     const cached = getStrategy(g, f, depth);
     if (cached) {
@@ -81,7 +81,7 @@ export default function StrategyModal({
       const response = await fetch('/api/ai/strategy', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ gameName: g, faction: f, depth }),
+        body: JSON.stringify({ gameName: g, ...(f ? { faction: f } : {}), depth }),
         signal: controller.signal,
       });
 
@@ -102,7 +102,7 @@ export default function StrategyModal({
 
       saveStrategy({
         gameName: g,
-        faction: f,
+        faction: f || '',
         depth,
         content: accumulated,
         timestamp: Date.now(),
@@ -175,7 +175,8 @@ export default function StrategyModal({
         type="text"
         value={faction}
         onChange={(e) => setFaction(e.target.value)}
-        placeholder="Faction, character, class, or corporation"
+        placeholder="Optional: faction, class, or corporation"
+        aria-label="Faction, class, or corporation (optional)"
         className="w-full bg-stone-800 border border-stone-700 rounded-xl px-3 py-2 text-stone-100 text-sm placeholder-stone-500 focus:outline-none focus:border-amber-500/60"
       />
       <div className="flex items-center gap-2">
@@ -254,10 +255,10 @@ export default function StrategyModal({
             className="w-14 h-14 mx-auto mb-3 object-contain drop-shadow-[0_0_10px_rgba(251,191,36,0.45)]"
           />
           <p className="text-stone-300 text-sm mb-1">
-            Pick a game and a faction to get started.
+            Enter a game and tap Divine — add a faction only if thou wantest role-specific advice.
           </p>
           <p className="text-stone-500 text-xs">
-            Example: Terraforming Mars · Helion · Overview
+            Example: Terraforming Mars (general) · or add Helion for corporation-focused tips
           </p>
         </div>
       )}
@@ -286,7 +287,7 @@ export default function StrategyModal({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-black/75 backdrop-blur-sm flex items-stretch justify-center sm:items-center sm:p-4"
+            className="fixed inset-0 z-[10050] bg-black/75 backdrop-blur-sm flex items-stretch justify-center sm:items-center sm:p-4"
             onClick={handleReset}
             style={{
               paddingTop: 'calc(env(safe-area-inset-top, 0px) + 12px)',

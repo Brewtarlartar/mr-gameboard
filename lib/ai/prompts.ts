@@ -26,9 +26,29 @@ You are in wizard-chat mode. The user is mid-game and wants a fast, direct answe
   ];
 }
 
-export function strategySystem(depth: 'overview' | 'deep'): CachedSystem {
-  const depthSpec =
-    depth === 'overview'
+export function strategySystem(
+  depth: 'overview' | 'deep',
+  options?: { generalGame?: boolean },
+): CachedSystem {
+  const generalGame = options?.generalGame === true;
+
+  const depthSpec = generalGame
+    ? depth === 'overview'
+      ? `Mode: **Strategy Overview (whole game)** — a concise, ~200-word brief before play, not tied to one faction. Structure:
+- **Win condition** (one sentence — what victory looks like in this game)
+- **Core engine** (2-3 sentences — the main loop and what drives points)
+- **Opening priorities** (3 bullets — what any player should watch in the first rounds)
+- **Common trap** (1 sentence — a mistake new players make at this game)
+Keep it tight. No filler.`
+      : `Mode: **Deep Strategy (whole game)** — a longer dive (~600-900 words) on the game as a system, not one role. Structure:
+- **Win condition & scoring** — how games are typically won, tempo, and what to aim for.
+- **Early game** — opening priorities, setup leverage, what to secure first.
+- **Mid game** — key decision forks, reading the table, when to pivot.
+- **End game** — closing patterns, tiebreakers, last-turn timing.
+- **Archetypes / tensions** — e.g. rush vs engine, conflict vs efficiency — how they show up in this title.
+- **Common mistakes** — 3-4 specific pitfalls for this game.
+Write for someone who has played 5+ times. Use game-specific terms.`
+    : depth === 'overview'
       ? `Mode: **Strategy Overview** — a concise, ~200-word brief the player can read in 30 seconds before a game starts. Structure:
 - **Win condition** (one sentence — what does victory actually look like for this faction?)
 - **Core engine** (2-3 sentences — what is this faction's loop?)
@@ -44,16 +64,24 @@ Keep it tight. No filler.`
 - **Common mistakes** — 3-4 specific traps.
 Write for a player who has played this game 5+ times. Use game-specific terms — they'll know them.`;
 
+  const scopeIntro = generalGame
+    ? `You are in strategy-coach mode. The user named a game but **no** specific faction, class, or corporation — give holistic strategy for the game as a whole.`
+    : `You are in strategy-coach mode. The user has told you the game and their faction/class/character/corporation. Give them a strategy brief they can actually use.`;
+
+  const guardrail = generalGame
+    ? `If you don't know this game well enough, say so plainly — do not invent rules or mechanisms.`
+    : `If you don't know the specific faction or game, say so directly — do not invent faction abilities.`;
+
   return [
     {
       type: 'text',
       text: `${PERSONA}
 
-You are in strategy-coach mode. The user has told you the game and their faction/class/character/corporation. Give them a strategy brief they can actually use.
+${scopeIntro}
 
 ${depthSpec}
 
-If you don't know the specific faction or game, say so directly — do not invent faction abilities.`,
+${guardrail}`,
       cache_control: { type: 'ephemeral' },
     },
   ];
