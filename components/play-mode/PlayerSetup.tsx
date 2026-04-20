@@ -91,6 +91,11 @@ export default function PlayerSetup({
                   onChange={(e) =>
                     updatePlayer(player.id, { name: e.target.value })
                   }
+                  onFocus={(e) => {
+                    if (/^Player \d+$/.test(e.currentTarget.value)) {
+                      e.currentTarget.select();
+                    }
+                  }}
                   className="flex-1 px-3 py-2 bg-stone-950/70 border border-amber-900/50 rounded-lg text-amber-100 font-serif font-semibold text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/40 focus:border-amber-500/50 transition-colors"
                 />
                 <button

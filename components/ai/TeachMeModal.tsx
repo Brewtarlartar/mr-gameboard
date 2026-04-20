@@ -34,8 +34,8 @@ export default function TeachMeModal({
   const { saveTeach, getTeach } = useAIStore();
   const [gameName, setGameName] = useState(initialGameName ?? '');
   const [players, setPlayers] = useState<TeachPlayer[]>([
-    { name: 'Player 1', faction: '' },
-    { name: 'Player 2', faction: '' },
+    { name: '', faction: '' },
+    { name: '', faction: '' },
   ]);
   const [plan, setPlan] = useState<TeachPlan | null>(null);
   const [chapterIndex, setChapterIndex] = useState(0);
@@ -69,7 +69,7 @@ export default function TeachMeModal({
         if (prev.length < target) {
           const next = [...prev];
           while (next.length < target) {
-            next.push({ name: `Player ${next.length + 1}`, faction: '' });
+            next.push({ name: '', faction: '' });
           }
           return next;
         }
@@ -81,9 +81,18 @@ export default function TeachMeModal({
   const playerCount = players.length;
   const canSubmit = gameName.trim().length > 0 && players.length >= 1 && !isLoading;
 
+  const normalizedPlayers = useMemo<TeachPlayer[]>(
+    () =>
+      players.map((p, i) => ({
+        name: p.name.trim() || `Player ${i + 1}`,
+        faction: p.faction ?? '',
+      })),
+    [players],
+  );
+
   const cacheKeyStr = useMemo(
-    () => (gameName.trim() ? teachKey(gameName.trim(), playerCount, players) : ''),
-    [gameName, playerCount, players],
+    () => (gameName.trim() ? teachKey(gameName.trim(), playerCount, normalizedPlayers) : ''),
+    [gameName, playerCount, normalizedPlayers],
   );
 
   const updatePlayer = (index: number, patch: Partial<TeachPlayer>) => {
@@ -92,7 +101,7 @@ export default function TeachMeModal({
 
   const addPlayer = () => {
     if (players.length >= MAX_PLAYERS) return;
-    setPlayers((prev) => [...prev, { name: `Player ${prev.length + 1}`, faction: '' }]);
+    setPlayers((prev) => [...prev, { name: '', faction: '' }]);
   };
 
   const removePlayer = () => {
@@ -124,7 +133,7 @@ export default function TeachMeModal({
       const response = await fetch('/api/ai/teach', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ gameName: g, playerCount, players }),
+        body: JSON.stringify({ gameName: g, playerCount, players: normalizedPlayers }),
         signal: controller.signal,
       });
 
@@ -143,7 +152,7 @@ export default function TeachMeModal({
       saveTeach(cacheKeyStr, {
         gameName: g,
         playerCount,
-        players,
+        players: normalizedPlayers,
         plan: data,
         timestamp: Date.now(),
       });
@@ -175,13 +184,13 @@ export default function TeachMeModal({
 
   const gameContextForWizard = useMemo(() => {
     if (!gameName.trim()) return undefined;
-    const roster = players
+    const roster = normalizedPlayers
       .map((p) => (p.faction ? `${p.name} (${p.faction})` : p.name))
       .join(', ');
     return `The user is currently learning ${gameName.trim()} with ${playerCount} player${
       playerCount === 1 ? '' : 's'
     }: ${roster}.`;
-  }, [gameName, playerCount, players]);
+  }, [gameName, playerCount, normalizedPlayers]);
 
   const renderHeader = (
     closeHandler: () => void,
