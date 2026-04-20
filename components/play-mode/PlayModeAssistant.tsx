@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { Game } from '@/types/game';
 import { useHapticFeedback } from '@/lib/hooks/useMobile';
+import WizardChatModal from '@/components/ai/WizardChatModal';
 
 interface PlayModeAssistantProps {
   game: Game;
@@ -28,7 +29,7 @@ export default function PlayModeAssistant({
   onComplete,
 }: PlayModeAssistantProps) {
   const [currentPhase, setCurrentPhase] = useState(0);
-  const [showAiAssistant, setShowAiAssistant] = useState(false);
+  const [wizardOpen, setWizardOpen] = useState(false);
   const haptic = useHapticFeedback();
 
   const phases = generateGamePhases(game, players.length);
@@ -50,6 +51,12 @@ export default function PlayModeAssistant({
   };
 
   const progress = ((currentPhase + 1) / phases.length) * 100;
+
+  const currentPhaseInfo = phases[currentPhase];
+  const roster = players.length > 0 ? players.join(', ') : 'the table';
+  const wizardGameContext = `The user is mid-game playing ${game.name} with ${players.length} player${
+    players.length === 1 ? '' : 's'
+  } (${roster}). They are currently in the "${currentPhaseInfo.title}" phase — ${currentPhaseInfo.subtitle}. Answer their question in the context of this game and this stage.`;
 
   return (
     <div className="space-y-5">
@@ -152,17 +159,17 @@ export default function PlayModeAssistant({
         )}
       </motion.div>
 
-      {/* AI Assistant Button */}
+      {/* AI Assistant Button — opens the Sage wizard chat with full game + phase context */}
       <button
         onClick={() => {
           haptic.medium();
-          setShowAiAssistant(!showAiAssistant);
+          setWizardOpen(true);
         }}
         className="w-full flex items-center justify-center gap-2 px-5 py-3 bg-stone-900/60 hover:bg-stone-900/80 border border-amber-900/40 hover:border-amber-700/60 rounded-xl transition-colors"
       >
         <MessageSquare className="w-4 h-4 text-amber-300" />
         <span className="font-serif font-semibold text-amber-200 text-sm">
-          {showAiAssistant ? 'Hide' : 'Ask'} the Sage
+          Ask the Sage a Question
         </span>
       </button>
 
@@ -193,6 +200,12 @@ export default function PlayModeAssistant({
           )}
         </button>
       </div>
+
+      <WizardChatModal
+        isOpen={wizardOpen}
+        onClose={() => setWizardOpen(false)}
+        gameContext={wizardGameContext}
+      />
     </div>
   );
 }
