@@ -217,7 +217,7 @@ export default function TeachMeModal({
       </div>
       <button
         onClick={closeHandler}
-        className="p-2 text-stone-400 hover:text-amber-200 rounded-lg hover:bg-stone-800 transition-colors"
+        className="inline-flex items-center justify-center min-w-11 min-h-11 text-stone-400 hover:text-amber-200 rounded-lg hover:bg-stone-800 transition-colors"
         aria-label={closeLabel}
       >
         <X className="w-5 h-5" />
@@ -292,8 +292,16 @@ export default function TeachMeModal({
       </div>
 
       {error && (
-        <div className="bg-red-900/30 border border-red-700/50 text-red-200 text-sm rounded-xl px-3 py-2">
-          {error}
+        <div className="bg-red-900/30 border border-red-700/50 text-red-200 text-sm rounded-xl px-3 py-2 flex items-center justify-between gap-3">
+          <span>{error}</span>
+          <button
+            type="button"
+            onClick={handleStart}
+            disabled={isLoading}
+            className="text-xs font-semibold text-amber-300 hover:text-amber-200 underline disabled:text-stone-500 shrink-0"
+          >
+            Retry
+          </button>
         </div>
       )}
 

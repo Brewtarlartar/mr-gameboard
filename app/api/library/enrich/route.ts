@@ -59,13 +59,10 @@ export async function POST(request: NextRequest) {
           continue;
         }
 
-        console.log(`[Enrich] Fetching data for ${game.name} (BGG ID: ${game.bggId})`);
-
         // First, try Supabase cache
         const cachedGame = await getGameDetails(game.bggId);
-        
+
         if (cachedGame && (cachedGame.image || cachedGame.thumbnail)) {
-          console.log(`[Enrich] ✅ Found ${game.name} in cache`);
           cacheHits++;
           
           // Merge cached data with existing game data
@@ -91,7 +88,6 @@ export async function POST(request: NextRequest) {
         }
 
         // If not in cache, try BGG API as fallback
-        console.log(`[Enrich] Game ${game.name} not in cache, trying BGG API...`);
         apiCalls++;
         
         const response = await fetch(
@@ -193,7 +189,6 @@ export async function POST(request: NextRequest) {
         };
 
         enrichedGames.push(applyStapleOverlay(enrichedGame));
-        console.log(`[Enrich] ✅ Successfully enriched ${game.name} from BGG API`);
 
         // Add a delay to avoid overwhelming BGG API
         await new Promise(resolve => setTimeout(resolve, 500));

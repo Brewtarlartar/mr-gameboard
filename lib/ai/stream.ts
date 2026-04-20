@@ -17,9 +17,7 @@ export function textStreamToResponse(
         }
         controller.close();
       } catch (err) {
-        const msg = err instanceof Error ? err.message : 'Unknown error';
-        controller.enqueue(encoder.encode(`\n\n[stream error: ${msg}]`));
-        controller.close();
+        controller.error(err);
       }
     },
   });

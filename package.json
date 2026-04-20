@@ -1,6 +1,6 @@
 {
   "name": "mr-gameboard",
-  "version": "0.2.0",
+  "version": "1.0.0-beta.1",
   "private": true,
   "scripts": {
     "dev": "WATCHPACK_POLLING=true CHOKIDAR_USEPOLLING=1 COPYFILE_DISABLE=1 next dev",

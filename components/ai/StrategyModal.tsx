@@ -4,10 +4,12 @@ import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Wand2, Loader2 } from 'lucide-react';
+import { X, Wand2, Loader2, Send } from 'lucide-react';
 import { useAIStore } from '@/lib/store/aiStore';
 import GamePicker from './GamePicker';
 import MarkdownMessage from './MarkdownMessage';
+
+type FollowUpMessage = { id: string; role: 'user' | 'assistant'; content: string };
 
 interface Props {
   isOpen: boolean;
@@ -36,6 +38,12 @@ export default function StrategyModal({
   const abortRef = useRef<AbortController | null>(null);
   const [portalMounted, setPortalMounted] = useState(false);
 
+  const [followUps, setFollowUps] = useState<FollowUpMessage[]>([]);
+  const [followUpInput, setFollowUpInput] = useState('');
+  const [followUpStreaming, setFollowUpStreaming] = useState(false);
+  const followUpAbortRef = useRef<AbortController | null>(null);
+  const resultScrollRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     setPortalMounted(true);
   }, []);
@@ -53,8 +61,15 @@ export default function StrategyModal({
   useEffect(() => {
     return () => {
       abortRef.current?.abort();
+      followUpAbortRef.current?.abort();
     };
   }, []);
+
+  useEffect(() => {
+    const el = resultScrollRef.current;
+    if (!el) return;
+    el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+  }, [followUps, followUpStreaming]);
 
   const canSubmit = gameName.trim().length > 0 && !isStreaming;
 
@@ -118,9 +133,76 @@ export default function StrategyModal({
 
   const handleReset = () => {
     abortRef.current?.abort();
+    followUpAbortRef.current?.abort();
     setContent('');
     setError(null);
     setIsStreaming(false);
+    setFollowUps([]);
+    setFollowUpInput('');
+    setFollowUpStreaming(false);
+  };
+
+  const handleFollowUp = async () => {
+    const text = followUpInput.trim();
+    if (!text || followUpStreaming || !content) return;
+
+    const userMsg: FollowUpMessage = { id: crypto.randomUUID(), role: 'user', content: text };
+    const asstMsg: FollowUpMessage = { id: crypto.randomUUID(), role: 'assistant', content: '' };
+
+    setFollowUps((prev) => [...prev, userMsg, asstMsg]);
+    setFollowUpInput('');
+    setFollowUpStreaming(true);
+
+    const g = gameName.trim();
+    const f = faction.trim();
+    const brief = depth === 'deep' ? 'deep-dive strategy' : 'strategy overview';
+    const gameContext =
+      `The user just received a ${brief} for ${g}${f ? ` (${f})` : ''}. ` +
+      `Here is the brief they're looking at:\n\n${content}\n\n` +
+      `Answer their follow-up question concisely, in that context.`;
+
+    const history = [...followUps, userMsg].map((m) => ({ role: m.role, content: m.content }));
+
+    const controller = new AbortController();
+    followUpAbortRef.current = controller;
+
+    try {
+      const response = await fetch('/api/ai/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: history, gameContext }),
+        signal: controller.signal,
+      });
+
+      if (!response.ok || !response.body) {
+        throw new Error(`Request failed (${response.status})`);
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let accumulated = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        accumulated += decoder.decode(value, { stream: true });
+        setFollowUps((prev) =>
+          prev.map((m) => (m.id === asstMsg.id ? { ...m, content: accumulated } : m)),
+        );
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Unknown error';
+      setFollowUps((prev) =>
+        prev.map((m) =>
+          m.id === asstMsg.id
+            ? { ...m, content: `Sorry — I hit an error reaching the Sage. ${msg}` }
+            : m,
+        ),
+      );
+    } finally {
+      setFollowUpStreaming(false);
+      followUpAbortRef.current = null;
+    }
   };
 
   const titleText = depth === 'deep' ? 'Deep Strategy' : 'Strategy Overview';
@@ -151,7 +233,7 @@ export default function StrategyModal({
       </div>
       <button
         onClick={closeHandler}
-        className="p-2 text-stone-400 hover:text-amber-200 rounded-lg hover:bg-stone-800 transition-colors"
+        className="inline-flex items-center justify-center min-w-11 min-h-11 text-stone-400 hover:text-amber-200 rounded-lg hover:bg-stone-800 transition-colors"
         aria-label={closeLabel}
       >
         <X className="w-5 h-5" />
@@ -223,18 +305,37 @@ export default function StrategyModal({
         </button>
       </div>
       {error && !content && (
-        <div className="bg-red-900/30 border border-red-700/50 text-red-200 text-sm rounded-xl px-3 py-2">
-          {error}
+        <div className="bg-red-900/30 border border-red-700/50 text-red-200 text-sm rounded-xl px-3 py-2 space-y-2">
+          <p>{error}</p>
+          <button
+            type="button"
+            onClick={handleGenerate}
+            disabled={isStreaming}
+            className="text-xs font-semibold text-amber-300 hover:text-amber-200 underline disabled:text-stone-500"
+          >
+            Retry
+          </button>
         </div>
       )}
     </div>
   );
 
   const resultSection = (
-    <div className="flex-1 overflow-y-auto px-3 py-3 sm:px-4 sm:py-4 min-h-0">
+    <div
+      ref={resultScrollRef}
+      className="flex-1 overflow-y-auto px-3 py-3 sm:px-4 sm:py-4 min-h-0"
+    >
       {error && content && (
-        <div className="bg-red-900/30 border border-red-700/50 text-red-200 text-sm rounded-xl px-3 py-2 mb-3">
-          {error}
+        <div className="bg-red-900/30 border border-red-700/50 text-red-200 text-sm rounded-xl px-3 py-2 mb-3 flex items-center justify-between gap-3">
+          <span>{error}</span>
+          <button
+            type="button"
+            onClick={handleGenerate}
+            disabled={isStreaming}
+            className="text-xs font-semibold text-amber-300 hover:text-amber-200 underline disabled:text-stone-500 shrink-0"
+          >
+            Retry
+          </button>
         </div>
       )}
 
@@ -265,6 +366,33 @@ export default function StrategyModal({
 
       {content && <MarkdownMessage>{content}</MarkdownMessage>}
 
+      {content && followUps.length > 0 && (
+        <div className="mt-6 pt-4 border-t border-amber-900/30 space-y-3">
+          {followUps.map((m) => (
+            <div
+              key={m.id}
+              className={m.role === 'user' ? 'flex justify-end' : 'flex justify-start'}
+            >
+              <div
+                className={
+                  m.role === 'user'
+                    ? 'max-w-[85%] bg-amber-500/20 border border-amber-500/40 rounded-2xl rounded-tr-sm px-4 py-2 text-stone-100'
+                    : 'max-w-[92%] bg-stone-800/60 border border-stone-700/40 rounded-2xl rounded-tl-sm px-4 py-2'
+                }
+              >
+                {m.role === 'user' ? (
+                  <p className="text-sm whitespace-pre-wrap">{m.content}</p>
+                ) : m.content.length === 0 ? (
+                  <Loader2 className="w-4 h-4 animate-spin text-amber-400" />
+                ) : (
+                  <MarkdownMessage>{m.content}</MarkdownMessage>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
       {content && !isStreaming && (
         <button
           onClick={handleReset}
@@ -275,6 +403,39 @@ export default function StrategyModal({
       )}
     </div>
   );
+
+  const followUpSection = content ? (
+    <div className="border-t border-amber-900/40 bg-stone-900 p-2 sm:p-3 safe-area-pb">
+      <div className="flex gap-2">
+        <textarea
+          value={followUpInput}
+          onChange={(e) => setFollowUpInput(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              handleFollowUp();
+            }
+          }}
+          placeholder="Ask a follow-up…"
+          rows={1}
+          disabled={followUpStreaming}
+          className="flex-1 min-w-0 bg-stone-800 border border-stone-700 rounded-xl px-3 py-2 text-stone-100 text-xs sm:text-sm placeholder-stone-500 placeholder:text-[11px] sm:placeholder:text-sm focus:outline-none focus:border-amber-500/60 resize-none max-h-32"
+        />
+        <button
+          onClick={handleFollowUp}
+          disabled={!followUpInput.trim() || followUpStreaming}
+          className="px-4 bg-amber-500 hover:bg-amber-400 disabled:bg-stone-700 disabled:text-stone-500 text-stone-950 font-semibold rounded-xl transition-colors flex items-center gap-1"
+          aria-label="Send follow-up"
+        >
+          {followUpStreaming ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <Send className="w-4 h-4" />
+          )}
+        </button>
+      </div>
+    </div>
+  ) : null;
 
   if (inline) {
     const popupOpen = isOpen && (isStreaming || !!content || !!error);
@@ -304,6 +465,7 @@ export default function StrategyModal({
             >
               {renderHeader(handleReset, 'Close result')}
               {resultSection}
+              {followUpSection}
             </motion.div>
           </motion.div>
         )}
@@ -344,7 +506,7 @@ export default function StrategyModal({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-end sm:items-center sm:justify-center sm:p-4"
+          className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-stretch sm:items-center sm:justify-center sm:p-4"
           onClick={onClose}
         >
           <motion.div
@@ -352,12 +514,13 @@ export default function StrategyModal({
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: '100%', opacity: 0 }}
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-            className="w-full sm:max-w-2xl h-[92vh] sm:h-[80vh] sm:rounded-2xl bg-stone-900 border-t sm:border border-amber-900/50 flex flex-col overflow-hidden safe-area-pt safe-area-pb"
+            className="w-full sm:max-w-2xl h-[100dvh] sm:h-[80dvh] sm:rounded-2xl bg-stone-900 sm:border border-amber-900/50 flex flex-col overflow-hidden safe-area-pt"
             onClick={(e) => e.stopPropagation()}
           >
             {renderHeader(onClose)}
             {formSection}
             {resultSection}
+            {followUpSection}
           </motion.div>
         </motion.div>
       )}

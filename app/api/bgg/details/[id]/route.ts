@@ -51,19 +51,7 @@ async function fetchGameDetails(gameId: string): Promise<BGGGameDetails | null> 
     }
 
     const xmlText = await response.text();
-    
-    // Log raw XML for debugging
-    console.log('[BGG API] Fetched XML for game:', gameId);
-    console.log('[BGG API] XML length:', xmlText.length);
-    
-    // Check if description exists in raw XML
-    const descMatch = xmlText.match(/<description>([\s\S]*?)<\/description>/i);
-    console.log('[BGG API] Description match found:', !!descMatch);
-    if (descMatch) {
-      console.log('[BGG API] Raw description length:', descMatch[1].length);
-      console.log('[BGG API] Raw description preview:', descMatch[1].substring(0, 200));
-    }
-    
+
     const $ = cheerio.load(xmlText, { xmlMode: true });
 
     const item = $('item').first();
@@ -96,16 +84,7 @@ async function fetchGameDetails(gameId: string): Promise<BGGGameDetails | null> 
     }
     
     const decodedDescription = decodeHtmlEntities(rawDescription);
-    
-    console.log('[BGG Details API] Game:', gameId);
-    console.log('[BGG Details API] Raw description length:', rawDescription.length);
-    console.log('[BGG Details API] Decoded description length:', decodedDescription.length);
-    if (decodedDescription.length > 0) {
-      console.log('[BGG Details API] Description preview:', decodedDescription.substring(0, 200));
-    } else {
-      console.log('[BGG Details API] ⚠️ No description found!');
-    }
-    
+
     const details: BGGGameDetails = {
       id: gameId,
       name: item.find('name[type="primary"]').attr('value') || '',

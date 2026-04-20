@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Send, Trash2, Loader2 } from 'lucide-react';
+import { X, Send, Trash2, Loader2, RotateCcw } from 'lucide-react';
 import { useAIStore } from '@/lib/store/aiStore';
 import MarkdownMessage from './MarkdownMessage';
 
@@ -18,6 +18,8 @@ export default function WizardChatModal({ isOpen, onClose, gameContext, inline =
   const { wizardMessages, appendWizardMessage, updateLastAssistantMessage, clearWizard } = useAIStore();
   const [input, setInput] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
+  const [lastError, setLastError] = useState<string | null>(null);
+  const lastUserTextRef = useRef<string>('');
   const scrollRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
 
@@ -31,22 +33,19 @@ export default function WizardChatModal({ isOpen, onClose, gameContext, inline =
     };
   }, []);
 
-  const handleSend = async () => {
-    const text = input.trim();
-    if (!text || isStreaming) return;
+  useEffect(() => {
+    if (!isOpen || inline) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [isOpen, inline]);
 
-    const userMsg = { id: crypto.randomUUID(), role: 'user' as const, content: text, timestamp: Date.now() };
-    const assistantMsg = { id: crypto.randomUUID(), role: 'assistant' as const, content: '', timestamp: Date.now() };
-
-    appendWizardMessage(userMsg);
-    appendWizardMessage(assistantMsg);
-    setInput('');
-    setIsStreaming(true);
-
-    const history = [...wizardMessages, userMsg].map((m) => ({ role: m.role, content: m.content }));
-
+  const runStream = async (history: { role: 'user' | 'assistant'; content: string }[]) => {
     const controller = new AbortController();
     abortRef.current = controller;
+    setLastError(null);
 
     try {
       const response = await fetch('/api/ai/chat', {
@@ -72,16 +71,47 @@ export default function WizardChatModal({ isOpen, onClose, gameContext, inline =
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Unknown error';
-      updateLastAssistantMessage(`Sorry — I hit an error reaching the AI. ${msg}`);
+      updateLastAssistantMessage('');
+      setLastError(msg);
     } finally {
       setIsStreaming(false);
       abortRef.current = null;
     }
   };
 
+  const handleSend = async () => {
+    const text = input.trim();
+    if (!text || isStreaming) return;
+
+    const userMsg = { id: crypto.randomUUID(), role: 'user' as const, content: text, timestamp: Date.now() };
+    const assistantMsg = { id: crypto.randomUUID(), role: 'assistant' as const, content: '', timestamp: Date.now() };
+
+    appendWizardMessage(userMsg);
+    appendWizardMessage(assistantMsg);
+    lastUserTextRef.current = text;
+    setInput('');
+    setIsStreaming(true);
+
+    const history = [...wizardMessages, userMsg].map((m) => ({ role: m.role, content: m.content }));
+    await runStream(history);
+  };
+
+  const handleRetry = async () => {
+    if (isStreaming) return;
+    const lastUser = [...wizardMessages].reverse().find((m) => m.role === 'user');
+    if (!lastUser) return;
+    const upTo = wizardMessages.findIndex((m) => m.id === lastUser.id);
+    const history = wizardMessages
+      .slice(0, upTo + 1)
+      .map((m) => ({ role: m.role, content: m.content }));
+    updateLastAssistantMessage('');
+    setIsStreaming(true);
+    await runStream(history);
+  };
+
   const body = (
     <>
-      <div className="flex items-center justify-between px-3 py-2 sm:px-4 sm:py-3 border-b border-stone-800 bg-stone-900/95 backdrop-blur">
+      <div className="flex items-center justify-between px-3 py-2 sm:px-4 sm:py-3 border-b border-stone-800 bg-stone-900/95 backdrop-blur safe-area-pt">
         <div className="flex items-center gap-2">
           <Image
             src="/crystal-ball.png"
@@ -99,7 +129,7 @@ export default function WizardChatModal({ isOpen, onClose, gameContext, inline =
           {wizardMessages.length > 0 && (
             <button
               onClick={clearWizard}
-              className="p-2 text-stone-400 hover:text-stone-200 rounded-lg hover:bg-stone-800"
+              className="inline-flex items-center justify-center min-w-11 min-h-11 text-stone-400 hover:text-stone-200 rounded-lg hover:bg-stone-800"
               aria-label="Clear chat"
             >
               <Trash2 className="w-4 h-4" />
@@ -107,7 +137,7 @@ export default function WizardChatModal({ isOpen, onClose, gameContext, inline =
           )}
           <button
             onClick={onClose}
-            className="p-2 text-stone-400 hover:text-stone-200 rounded-lg hover:bg-stone-800"
+            className="inline-flex items-center justify-center min-w-11 min-h-11 text-stone-400 hover:text-stone-200 rounded-lg hover:bg-stone-800"
             aria-label="Close"
           >
             <X className="w-5 h-5" />
@@ -143,7 +173,7 @@ export default function WizardChatModal({ isOpen, onClose, gameContext, inline =
             >
               {m.role === 'user' ? (
                 <p className="text-sm whitespace-pre-wrap">{m.content}</p>
-              ) : m.content.length === 0 ? (
+              ) : m.content.length === 0 && isStreaming ? (
                 <Loader2 className="w-4 h-4 animate-spin text-amber-400" />
               ) : (
                 <MarkdownMessage>{m.content}</MarkdownMessage>
@@ -151,9 +181,25 @@ export default function WizardChatModal({ isOpen, onClose, gameContext, inline =
             </div>
           </div>
         ))}
+
+        {lastError && !isStreaming && (
+          <div className="flex justify-start">
+            <div className="max-w-[92%] bg-red-900/30 border border-red-700/50 text-red-200 text-sm rounded-2xl rounded-tl-sm px-4 py-2 flex items-center justify-between gap-3">
+              <span>Sorry — I hit an error reaching the AI. {lastError}</span>
+              <button
+                type="button"
+                onClick={handleRetry}
+                className="shrink-0 inline-flex items-center gap-1 text-xs font-semibold text-amber-300 hover:text-amber-200 underline"
+              >
+                <RotateCcw className="w-3 h-3" />
+                Retry
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
-      <div className="border-t border-stone-800 bg-stone-900 p-2 sm:p-3">
+      <div className="border-t border-stone-800 bg-stone-900 p-2 sm:p-3 safe-area-pb">
         <div className="flex gap-2">
           <textarea
             value={input}
@@ -209,7 +255,7 @@ export default function WizardChatModal({ isOpen, onClose, gameContext, inline =
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 z-[10050] bg-black/70 backdrop-blur-sm flex items-end sm:items-center sm:justify-center sm:p-4"
+          className="fixed inset-0 z-[10050] bg-black/70 backdrop-blur-sm flex items-stretch sm:items-center sm:justify-center sm:p-4"
           onClick={onClose}
         >
           <motion.div
@@ -217,7 +263,7 @@ export default function WizardChatModal({ isOpen, onClose, gameContext, inline =
             animate={{ y: 0, opacity: 1 }}
             exit={{ y: '100%', opacity: 0 }}
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-            className="w-full sm:max-w-2xl h-[92vh] sm:h-[80vh] sm:rounded-2xl bg-stone-900 border-t sm:border border-stone-700 flex flex-col overflow-hidden"
+            className="w-full sm:max-w-2xl h-[100dvh] sm:h-[80dvh] sm:rounded-2xl bg-stone-900 sm:border border-stone-700 flex flex-col overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
             {body}

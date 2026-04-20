@@ -111,7 +111,7 @@ export default function MePage() {
           everything on this very device.
         </p>
         <p className="text-[11px] text-amber-200/50 font-serif italic">
-          v1.0 · Forged for tabletop nights and long campaigns alike.
+          v1.0 · beta · Forged for tabletop nights and long campaigns alike.
         </p>
       </section>
 

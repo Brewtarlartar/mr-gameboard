@@ -2,6 +2,7 @@
   "name": "The Tome",
   "short_name": "The Tome",
   "description": "Your board game companion: library, discovery, play tracking, and stats.",
+  "version": "1.0.0-beta.1",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

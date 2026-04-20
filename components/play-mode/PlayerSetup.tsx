@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Users, Plus, Trash2, UserPlus } from 'lucide-react';
 import { Player } from '@/types/game';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -17,6 +17,7 @@ export default function PlayerSetup({
   gameAttributes = [],
 }: PlayerSetupProps) {
   const [newPlayerName, setNewPlayerName] = useState('');
+  const addInputRef = useRef<HTMLInputElement>(null);
 
   const addPlayer = () => {
     if (!newPlayerName.trim()) return;
@@ -29,6 +30,10 @@ export default function PlayerSetup({
 
     onPlayersChange([...players, newPlayer]);
     setNewPlayerName('');
+    // Keep focus on the input so the viewport stays put and the user can add another player.
+    requestAnimationFrame(() => {
+      addInputRef.current?.focus({ preventScroll: true });
+    });
   };
 
   const removePlayer = (id: string) => {
@@ -52,6 +57,7 @@ export default function PlayerSetup({
 
       <div className="flex gap-2">
         <input
+          ref={addInputRef}
           type="text"
           value={newPlayerName}
           onChange={(e) => setNewPlayerName(e.target.value)}
@@ -100,10 +106,10 @@ export default function PlayerSetup({
                 />
                 <button
                   onClick={() => removePlayer(player.id)}
-                  className="p-2 hover:bg-red-500/10 border border-transparent hover:border-red-500/30 rounded-lg transition-colors text-stone-400 hover:text-red-400"
+                  className="shrink-0 inline-flex items-center justify-center min-w-[44px] min-h-[44px] hover:bg-red-500/10 border border-transparent hover:border-red-500/30 rounded-lg transition-colors text-stone-400 hover:text-red-400"
                   aria-label={`Remove ${player.name}`}
                 >
-                  <Trash2 className="w-4 h-4" />
+                  <Trash2 className="w-5 h-5" />
                 </button>
               </div>
 
