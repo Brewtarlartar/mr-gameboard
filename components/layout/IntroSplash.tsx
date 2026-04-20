@@ -17,6 +17,10 @@ export default function IntroSplash() {
   // sessionStorage, which prevents a brief "flash + fade" on subsequent
   // navigations within the same session (where the intro should stay hidden).
   const [show, setShow] = useState<boolean | null>(null);
+  // `started` flips on the user's first tap. iOS Safari (and any web context)
+  // refuses audio.play() without a prior user gesture, so the splash music
+  // and the synchronized visual sequence are both gated behind that tap.
+  const [started, setStarted] = useState(false);
   const [ready, setReady] = useState(false);
   const splashAudioRef = useRef<HTMLAudioElement>(null);
 
@@ -35,21 +39,23 @@ export default function IntroSplash() {
       return;
     }
     setShow(true);
-    const timeout = window.setTimeout(() => {
-      setReady(true);
-    }, DURATION_MS);
-    return () => window.clearTimeout(timeout);
   }, []);
 
   useEffect(() => {
-    if (show !== true) return;
+    if (!started) return;
     const audio = splashAudioRef.current;
-    if (!audio) return;
-    audio.volume = SPLASH_VOLUME;
-    audio.play().catch(() => {});
+    if (audio) {
+      audio.volume = SPLASH_VOLUME;
+      audio.play().catch(() => {});
+    }
+
+    const readyTimer = window.setTimeout(() => {
+      setReady(true);
+    }, DURATION_MS);
 
     let rafId = 0;
     const fadeTimer = window.setTimeout(() => {
+      if (!audio) return;
       const start = performance.now();
       const startVol = audio.volume;
       const step = (now: number) => {
@@ -65,13 +71,18 @@ export default function IntroSplash() {
     }, FADE_START_MS);
 
     return () => {
+      window.clearTimeout(readyTimer);
       window.clearTimeout(fadeTimer);
       if (rafId) cancelAnimationFrame(rafId);
-      audio.pause();
+      if (audio) audio.pause();
     };
-  }, [show]);
+  }, [started]);
 
-  const handleEnter = () => {
+  const handleTap = () => {
+    if (!started) {
+      setStarted(true);
+      return;
+    }
     if (!ready) return;
     try {
       sessionStorage.setItem(STORAGE_KEY, '1');
@@ -90,14 +101,14 @@ export default function IntroSplash() {
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.6 }}
-          onClick={handleEnter}
-          className={`fixed inset-0 z-[100] bg-black overflow-hidden ${ready ? 'cursor-pointer' : ''}`}
+          onClick={handleTap}
+          className="fixed inset-0 z-[100] bg-black overflow-hidden cursor-pointer"
         >
           <audio ref={splashAudioRef} src="/Splash%20theme.m4a" preload="auto" />
           <motion.div
             initial={{ scale: 1 }}
-            animate={{ scale: 1.08 }}
-            transition={{ duration: DURATION_MS / 1000, ease: 'linear' }}
+            animate={{ scale: started ? 1.08 : 1 }}
+            transition={{ duration: started ? DURATION_MS / 1000 : 0, ease: 'linear' }}
             className="absolute inset-0"
           >
             <Image
@@ -110,17 +121,19 @@ export default function IntroSplash() {
             />
           </motion.div>
 
-          <motion.div
-            aria-hidden="true"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: [0, 0.55, 0.3, 0.65, 0.35] }}
-            transition={{ duration: DURATION_MS / 1000, ease: 'easeInOut' }}
-            className="pointer-events-none absolute inset-0 mix-blend-screen"
-            style={{
-              background:
-                'radial-gradient(ellipse at 50% 55%, rgba(251, 191, 36, 0.45) 0%, rgba(220, 38, 38, 0.18) 35%, rgba(0,0,0,0) 70%)',
-            }}
-          />
+          {started && (
+            <motion.div
+              aria-hidden="true"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: [0, 0.55, 0.3, 0.65, 0.35] }}
+              transition={{ duration: DURATION_MS / 1000, ease: 'easeInOut' }}
+              className="pointer-events-none absolute inset-0 mix-blend-screen"
+              style={{
+                background:
+                  'radial-gradient(ellipse at 50% 55%, rgba(251, 191, 36, 0.45) 0%, rgba(220, 38, 38, 0.18) 35%, rgba(0,0,0,0) 70%)',
+              }}
+            />
+          )}
 
           <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
             {Array.from({ length: EMBER_COUNT }).map((_, i) => {
@@ -162,8 +175,8 @@ export default function IntroSplash() {
             <div className="w-52 sm:w-64 h-[3px] bg-stone-800/70 rounded-full overflow-hidden border border-amber-900/40 shadow-[inset_0_1px_1px_rgba(0,0,0,0.6)]">
               <motion.div
                 initial={{ scaleX: 0 }}
-                animate={{ scaleX: 1 }}
-                transition={{ duration: DURATION_MS / 1000, ease: 'linear' }}
+                animate={{ scaleX: started ? 1 : 0 }}
+                transition={{ duration: started ? DURATION_MS / 1000 : 0, ease: 'linear' }}
                 style={{ transformOrigin: '0% 50%' }}
                 className="h-full bg-gradient-to-r from-amber-700 via-amber-300 to-amber-700 shadow-[0_0_10px_rgba(251,191,36,0.7)]"
               />
@@ -171,7 +184,20 @@ export default function IntroSplash() {
             <span className="intro-subtitle">Board game companion</span>
           </motion.div>
 
-          {ready && (
+          {!started && (
+            <motion.div
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: [0, 1, 0.6, 1], y: 0 }}
+              transition={{ duration: 2, repeat: Infinity, repeatType: 'loop' }}
+              className="absolute bottom-8 left-0 right-0 flex justify-center pointer-events-none"
+            >
+              <span className="text-amber-200/90 text-[11px] sm:text-xs font-serif italic tracking-[0.2em] uppercase drop-shadow-[0_0_8px_rgba(251,191,36,0.5)]">
+                Tap to begin thy tale
+              </span>
+            </motion.div>
+          )}
+
+          {started && ready && (
             <motion.div
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: [0, 1, 0.6, 1], y: 0 }}
