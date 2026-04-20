@@ -23,20 +23,44 @@ export default function BackgroundAudio() {
     }
 
     const attemptPlay = () => {
-      if (!isMutedRef.current && audio.paused) {
+      if (!isMutedRef.current && !document.hidden && audio.paused) {
         audio.play().catch(() => {});
       }
     };
 
     const handlePause = () => {
+      // Auto-resume only while the tab/app is actually in the foreground.
+      // If the user switched apps or backgrounded the PWA, stay paused.
       if (!isMutedRef.current && !document.hidden) {
         audio.play().catch(() => {});
       }
     };
 
     const handleVisibility = () => {
-      if (!document.hidden && !isMutedRef.current && audio.paused) {
+      if (document.hidden) {
+        if (!audio.paused) {
+          audio.pause();
+        }
+        return;
+      }
+      if (!isMutedRef.current && audio.paused) {
         audio.play().catch(() => {});
+      }
+    };
+
+    // iOS Safari / PWAs fire pagehide when the app is swiped away or the
+    // screen locks — pause hard so audio doesn't keep playing in the
+    // background. We don't try to resume on pageshow; visibilitychange
+    // handles the return trip when the user brings the app back.
+    const handlePageHide = () => {
+      if (!audio.paused) {
+        audio.pause();
+      }
+    };
+
+    const handleWindowBlur = () => {
+      if (document.hidden && !audio.paused) {
+        audio.pause();
       }
     };
 
@@ -47,7 +71,7 @@ export default function BackgroundAudio() {
     try {
       introSeen = sessionStorage.getItem('tome-intro-seen') === '1';
     } catch {}
-    if (introSeen) {
+    if (introSeen && !document.hidden) {
       audio.play().catch(() => {});
     }
 
@@ -58,6 +82,8 @@ export default function BackgroundAudio() {
     window.addEventListener('tome-audio-start', attemptPlay);
     audio.addEventListener('pause', handlePause);
     document.addEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('pagehide', handlePageHide);
+    window.addEventListener('blur', handleWindowBlur);
 
     return () => {
       document.removeEventListener('pointerdown', attemptPlay);
@@ -67,6 +93,8 @@ export default function BackgroundAudio() {
       window.removeEventListener('tome-audio-start', attemptPlay);
       audio.removeEventListener('pause', handlePause);
       document.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('pagehide', handlePageHide);
+      window.removeEventListener('blur', handleWindowBlur);
     };
   }, [isMuted]);
 
