@@ -219,8 +219,12 @@ export default function GameDetail({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 flex items-stretch justify-center sm:p-4 sm:items-center"
-            style={{ zIndex: 9999 }}
+            className="fixed inset-0 flex items-stretch justify-center sm:items-center"
+            style={{
+              zIndex: 9999,
+              paddingTop: 'env(safe-area-inset-top, 0px)',
+              paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+            }}
             onClick={onClose}
           >
             <motion.div
@@ -228,7 +232,7 @@ export default function GameDetail({
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: '100%', opacity: 0 }}
               transition={{ type: 'spring', damping: 30, stiffness: 280 }}
-              className="relative w-full sm:max-w-3xl h-full sm:h-[92vh] bg-gradient-to-b from-stone-950 via-stone-900 to-stone-950 border-t sm:border border-amber-900/60 sm:rounded-2xl shadow-2xl shadow-black/60 flex flex-col overflow-hidden"
+              className="relative w-full sm:max-w-3xl h-full sm:h-[92vh] sm:my-4 sm:mx-4 bg-gradient-to-b from-stone-950 via-stone-900 to-stone-950 border-t sm:border border-amber-900/60 sm:rounded-2xl shadow-2xl shadow-black/60 flex flex-col overflow-hidden"
               onClick={(e) => e.stopPropagation()}
             >
               {/* Hero */}

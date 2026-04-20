@@ -190,7 +190,11 @@ export default function GameDetailModal({
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[9998] flex items-start sm:items-center justify-center p-2 sm:p-4 overflow-y-auto"
+          className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[9998] flex items-start sm:items-center justify-center px-2 sm:px-4 overflow-y-auto"
+          style={{
+            paddingTop: 'max(calc(env(safe-area-inset-top, 0px) + 8px), 16px)',
+            paddingBottom: 'max(calc(env(safe-area-inset-bottom, 0px) + 8px), 16px)',
+          }}
           onClick={onClose}
           role="dialog"
           aria-modal="true"
@@ -202,7 +206,11 @@ export default function GameDetailModal({
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
             onClick={(e) => e.stopPropagation()}
-            className="bg-gradient-to-b from-stone-900 to-stone-950 border border-amber-900/50 rounded-2xl shadow-2xl shadow-black/50 w-full max-w-5xl my-4 sm:my-8 flex flex-col max-h-[95vh]"
+            style={{
+              maxHeight:
+                'calc(100dvh - max(calc(env(safe-area-inset-top, 0px) + 8px), 16px) - max(calc(env(safe-area-inset-bottom, 0px) + 8px), 16px))',
+            }}
+            className="bg-gradient-to-b from-stone-900 to-stone-950 border border-amber-900/50 rounded-2xl shadow-2xl shadow-black/50 w-full max-w-5xl flex flex-col"
           >
             {/* Sticky themed header */}
             <div className="sticky top-0 z-20 flex items-center justify-between gap-3 px-4 sm:px-6 py-4 bg-stone-950/95 backdrop-blur-sm border-b border-amber-900/40 rounded-t-2xl">
