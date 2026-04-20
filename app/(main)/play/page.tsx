@@ -5,12 +5,12 @@ import { Game, Player } from '@/types/game';
 import { useGameStore } from '@/lib/store/gameStore';
 import { usePlaySessionStore } from '@/lib/store/playSessionStore';
 import { motion } from 'framer-motion';
-import { Play as PlayIcon, Gamepad2, RotateCcw, History, X } from 'lucide-react';
+import { Play as PlayIcon, Gamepad2, RotateCcw, History, X, Swords, Trophy } from 'lucide-react';
 import GameSelector from '@/components/play-mode/GameSelector';
 import PlayerSetup from '@/components/play-mode/PlayerSetup';
 import GameUtilities from '@/components/play-mode/GameUtilities';
 import PlayModeAssistant from '@/components/play-mode/PlayModeAssistant';
-import LiveLeaderboard from '@/components/play-mode/LiveLeaderboard';
+import TeachMeModal from '@/components/ai/TeachMeModal';
 import Image from 'next/image';
 
 export default function PlayModePage() {
@@ -23,8 +23,11 @@ export default function PlayModePage() {
     startSession,
     clearDraft,
     hasResumableDraft,
+    completeSession,
   } = usePlaySessionStore();
   const [showResumeBanner, setShowResumeBanner] = useState(false);
+  const [teachOpen, setTeachOpen] = useState(false);
+  const [savedSummary, setSavedSummary] = useState<string | null>(null);
 
   useEffect(() => {
     loadLibrary();
@@ -51,6 +54,33 @@ export default function PlayModePage() {
     setShowResumeBanner(false);
   };
 
+  const handleComplete = () => {
+    const gameName = selectedGame?.name ?? 'the session';
+    const { mode, players: scoreRows, coopOutcome } = draft.scoreState;
+    let summary = `${gameName} saved to thy chronicle`;
+    if (scoreRows.length > 0) {
+      if (mode === 'competitive') {
+        const totals = scoreRows.map((p) => ({
+          name: p.name,
+          total: Object.values(p.categories).reduce((s, v) => s + (v || 0), 0),
+        }));
+        const max = totals.reduce((m, t) => Math.max(m, t.total), 0);
+        const winners = totals.filter((t) => max > 0 && t.total === max).map((t) => t.name);
+        if (winners.length > 0) {
+          summary = `${gameName} saved — ${winners.join(' & ')} won with ${max}`;
+        }
+      } else if (mode === 'coop' && coopOutcome) {
+        summary = `${gameName} saved — group ${coopOutcome === 'win' ? 'victory' : 'defeat'}`;
+      } else if (mode === 'team') {
+        summary = `${gameName} saved to thy chronicle`;
+      }
+    }
+    completeSession();
+    setShowResumeBanner(false);
+    setSavedSummary(summary);
+    setTimeout(() => setSavedSummary(null), 4500);
+  };
+
   const dismissResume = () => {
     clearDraft();
     setShowResumeBanner(false);
@@ -70,6 +100,32 @@ export default function PlayModePage() {
             : 'May fortune favor thee'}
         </p>
       </div>
+
+      {savedSummary && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -10 }}
+          className="flex items-center gap-3 bg-emerald-500/10 border border-emerald-500/40 rounded-xl p-4"
+        >
+          <Trophy className="w-5 h-5 text-emerald-300 flex-shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-serif font-semibold text-emerald-100 truncate">
+              {savedSummary}
+            </p>
+            <p className="text-xs text-emerald-200/70 font-serif italic">
+              Check the Analytics tab to see thy legend grow
+            </p>
+          </div>
+          <button
+            onClick={() => setSavedSummary(null)}
+            className="p-1.5 text-emerald-300 hover:text-emerald-100 rounded-md transition-colors"
+            aria-label="Dismiss"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </motion.div>
+      )}
 
       {showResumeBanner && selectedGame && (
         <motion.div
@@ -150,6 +206,23 @@ export default function PlayModePage() {
                 </div>
               </motion.div>
 
+              <button
+                onClick={() => setTeachOpen(true)}
+                className="w-full flex items-center gap-3 px-4 py-3 bg-gradient-to-b from-stone-900/80 to-stone-950/80 hover:from-amber-950/30 hover:to-stone-950/80 border border-amber-900/50 hover:border-amber-500/60 rounded-xl transition-colors text-left group"
+              >
+                <div className="w-10 h-10 shrink-0 rounded-lg bg-gradient-to-br from-amber-500 to-amber-700 border border-amber-400/40 flex items-center justify-center shadow-md shadow-amber-900/30">
+                  <Swords className="w-5 h-5 text-stone-950" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="font-serif font-semibold text-amber-100 text-sm leading-tight">
+                    Skip the Rulebook
+                  </div>
+                  <div className="text-xs text-amber-200/70 font-serif italic truncate">
+                    Get a guided teach for {selectedGame.name} before you begin
+                  </div>
+                </div>
+              </button>
+
               <PlayerSetup
                 players={players}
                 onPlayersChange={(next: Player[]) => setPlayers(next)}
@@ -185,19 +258,13 @@ export default function PlayModePage() {
             <PlayModeAssistant
               game={selectedGame}
               players={players.map((p) => p.name)}
-              onComplete={handleReset}
+              onComplete={handleComplete}
             />
           )}
         </div>
 
         <div className="lg:col-span-1 space-y-6">
-          <GameUtilities
-            game={selectedGame}
-            playerNames={players.map((p) => p.name)}
-          />
-          {currentStep === 'playing' && players.length > 0 && (
-            <LiveLeaderboard players={players.map((p) => p.name)} />
-          )}
+          <GameUtilities game={selectedGame} />
         </div>
       </div>
 
@@ -212,6 +279,14 @@ export default function PlayModePage() {
           </button>
         </div>
       )}
+
+      <TeachMeModal
+        isOpen={teachOpen}
+        onClose={() => setTeachOpen(false)}
+        initialGameName={selectedGame?.name}
+        lockedGame={!!selectedGame}
+        initialPlayerCount={players.length || undefined}
+      />
     </div>
   );
 }

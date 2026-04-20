@@ -9,10 +9,9 @@ import { Game } from '@/types/game';
 
 interface GameUtilitiesProps {
   game?: Game | null;
-  playerNames?: string[];
 }
 
-export default function GameUtilities({ game, playerNames }: GameUtilitiesProps = {}) {
+export default function GameUtilities({ game }: GameUtilitiesProps = {}) {
   const [activeTab, setActiveTab] = useState<'dice' | 'score' | 'timer'>('score');
 
   const tabs = [
@@ -50,7 +49,7 @@ export default function GameUtilities({ game, playerNames }: GameUtilitiesProps 
 
       <div className="min-h-[240px]">
         {activeTab === 'dice' && <DiceRoller />}
-        {activeTab === 'score' && <ScoreTracker game={game} initialPlayers={playerNames} />}
+        {activeTab === 'score' && <ScoreTracker game={game} />}
         {activeTab === 'timer' && <TurnTimer />}
       </div>
     </div>

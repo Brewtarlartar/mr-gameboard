@@ -5,6 +5,7 @@ import { Plus, Minus, Trash2, Trophy, Crown, Users, Swords, HeartHandshake } fro
 import { motion, AnimatePresence } from 'framer-motion';
 import { Game } from '@/types/game';
 import { SessionMode } from '@/lib/store/playHistoryStore';
+import { usePlaySessionStore, ScorePlayerRow } from '@/lib/store/playSessionStore';
 import { useHapticFeedback } from '@/lib/hooks/useMobile';
 
 export interface ScoreCategory {
@@ -108,7 +109,6 @@ export const SCORE_TEMPLATES: ScoreTemplate[] = [
   },
 ];
 
-// Map BGG ids and name-match heuristics to templates.
 const BGG_TEMPLATE_MAP: Record<number, string> = {
   266192: 'wingspan',
   13: 'catan',
@@ -131,61 +131,39 @@ function matchTemplateForGame(game?: Game | null): ScoreTemplate {
   return byName ?? SCORE_TEMPLATES[0];
 }
 
-interface PlayerRow {
-  id: string;
-  name: string;
-  team?: string;
-  categories: Record<string, number>;
-}
-
 interface ScoreTrackerProps {
   game?: Game | null;
-  mode?: SessionMode;
-  initialPlayers?: string[];
 }
 
-export default function ScoreTracker({ game, mode: modeProp, initialPlayers }: ScoreTrackerProps = {}) {
+export default function ScoreTracker({ game }: ScoreTrackerProps = {}) {
   const haptic = useHapticFeedback();
-  const [mode, setMode] = useState<SessionMode>(modeProp ?? 'competitive');
-  const [templateId, setTemplateId] = useState<string>(() => matchTemplateForGame(game).id);
-  const [players, setPlayers] = useState<PlayerRow[]>([]);
+  const { mode, templateId, players, coopOutcome } = usePlaySessionStore(
+    (s) => s.draft.scoreState,
+  );
+  const setScoreMode = usePlaySessionStore((s) => s.setScoreMode);
+  const setScoreTemplate = usePlaySessionStore((s) => s.setScoreTemplate);
+  const setScorePlayers = usePlaySessionStore((s) => s.setScorePlayers);
+  const setCoopOutcome = usePlaySessionStore((s) => s.setCoopOutcome);
+
   const [newPlayerName, setNewPlayerName] = useState('');
   const [newPlayerTeam, setNewPlayerTeam] = useState('A');
-  const [coopOutcome, setCoopOutcome] = useState<'win' | 'loss' | null>(null);
 
   useEffect(() => {
-    setTemplateId(matchTemplateForGame(game).id);
-  }, [game?.bggId, game?.name]);
-
-  useEffect(() => {
-    if (modeProp) setMode(modeProp);
-  }, [modeProp]);
-
-  useEffect(() => {
-    if (!initialPlayers || initialPlayers.length === 0) return;
-    setPlayers((prev) => {
-      if (prev.length > 0) return prev;
-      return initialPlayers.map((name, idx) => ({
-        id: `seed-${idx}-${Date.now()}`,
-        name,
-        team: idx % 2 === 0 ? 'A' : 'B',
-        categories: {},
-      }));
-    });
-  }, [initialPlayers]);
+    setScoreTemplate(matchTemplateForGame(game).id);
+  }, [game?.bggId, game?.name, setScoreTemplate]);
 
   const template = useMemo(
     () => SCORE_TEMPLATES.find((t) => t.id === templateId) ?? SCORE_TEMPLATES[0],
     [templateId]
   );
 
-  const totalFor = (player: PlayerRow) =>
+  const totalFor = (player: ScorePlayerRow) =>
     template.categories.reduce((sum, cat) => sum + (player.categories[cat.key] ?? 0), 0);
 
   const addPlayer = () => {
     if (!newPlayerName.trim()) return;
     haptic.selection();
-    setPlayers((prev) => [
+    setScorePlayers((prev) => [
       ...prev,
       {
         id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
@@ -199,12 +177,12 @@ export default function ScoreTracker({ game, mode: modeProp, initialPlayers }: S
 
   const removePlayer = (id: string) => {
     haptic.selection();
-    setPlayers((prev) => prev.filter((p) => p.id !== id));
+    setScorePlayers((prev) => prev.filter((p) => p.id !== id));
   };
 
   const bumpCategory = (playerId: string, key: string, delta: number) => {
     haptic.selection();
-    setPlayers((prev) =>
+    setScorePlayers((prev) =>
       prev.map((p) =>
         p.id === playerId
           ? {
@@ -220,7 +198,7 @@ export default function ScoreTracker({ game, mode: modeProp, initialPlayers }: S
   };
 
   const setCategory = (playerId: string, key: string, value: number) => {
-    setPlayers((prev) =>
+    setScorePlayers((prev) =>
       prev.map((p) =>
         p.id === playerId
           ? {
@@ -233,7 +211,7 @@ export default function ScoreTracker({ game, mode: modeProp, initialPlayers }: S
   };
 
   const setPlayerTeam = (playerId: string, team: string) => {
-    setPlayers((prev) => prev.map((p) => (p.id === playerId ? { ...p, team } : p)));
+    setScorePlayers((prev) => prev.map((p) => (p.id === playerId ? { ...p, team } : p)));
   };
 
   const sortedPlayers = useMemo(() => {
@@ -258,6 +236,11 @@ export default function ScoreTracker({ game, mode: modeProp, initialPlayers }: S
   const leaderId = sortedPlayers[0] && totalFor(sortedPlayers[0]) > 0 ? sortedPlayers[0].id : null;
   const leaderTeam = teamTotals[0] && teamTotals[0].total > 0 ? teamTotals[0].team : null;
 
+  const handleSetMode = (next: SessionMode) => {
+    haptic.selection();
+    setScoreMode(next);
+  };
+
   return (
     <div className="space-y-4">
       {/* Mode switch */}
@@ -272,10 +255,7 @@ export default function ScoreTracker({ game, mode: modeProp, initialPlayers }: S
           return (
             <button
               key={m.id}
-              onClick={() => {
-                haptic.selection();
-                setMode(m.id);
-              }}
+              onClick={() => handleSetMode(m.id)}
               className={`flex items-center justify-center gap-1.5 px-2 py-2 rounded-lg text-xs font-serif font-semibold transition-colors ${
                 active
                   ? 'bg-gradient-to-b from-amber-500 to-amber-700 text-stone-950 border border-amber-400/40 shadow-md shadow-amber-900/30'
@@ -294,7 +274,7 @@ export default function ScoreTracker({ game, mode: modeProp, initialPlayers }: S
         <div>
           <select
             value={templateId}
-            onChange={(e) => setTemplateId(e.target.value)}
+            onChange={(e) => setScoreTemplate(e.target.value)}
             className="w-full px-3 py-2 bg-stone-950/70 border border-amber-900/50 rounded-lg text-amber-100 text-sm font-serif focus:outline-none focus:ring-2 focus:ring-amber-500/40 focus:border-amber-500/50 transition-colors"
           >
             {SCORE_TEMPLATES.map((t) => (
