@@ -104,7 +104,7 @@ export default function BackgroundAudio() {
       <button
         onClick={toggleMuted}
         aria-label={isMuted ? 'Unmute background music' : 'Mute background music'}
-        className="fixed z-50 bottom-24 right-4 lg:bottom-6 lg:right-6 p-3 rounded-full bg-stone-900/85 border border-amber-900/60 text-amber-200 hover:text-amber-100 hover:border-amber-500/70 hover:shadow-[0_0_12px_-2px_rgba(251,191,36,0.5)] backdrop-blur-sm transition-all"
+        className="tome-audio-toggle fixed z-50 right-4 lg:right-6 p-3 rounded-full bg-stone-900/85 border border-amber-900/60 text-amber-200 hover:text-amber-100 hover:border-amber-500/70 hover:shadow-[0_0_12px_-2px_rgba(251,191,36,0.5)] backdrop-blur-sm transition-all"
       >
         {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
       </button>

@@ -511,6 +511,17 @@ body::after {
   .safe-area-top {
     top: env(safe-area-inset-top, 0px);
   }
+
+  /* Music mute/unmute toggle: floats above the mobile bottom nav on small
+     screens and tucks into the bottom-right corner on desktop. */
+  .tome-audio-toggle {
+    bottom: calc(env(safe-area-inset-bottom, 0px) + 104px);
+  }
+  @media (min-width: 1024px) {
+    .tome-audio-toggle {
+      bottom: 1.5rem;
+    }
+  }
 }
 
 ::-webkit-scrollbar {
