@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Heart, Users, Clock, Star, Trash2, TrendingUp, Sparkles } from 'lucide-react';
+import { Heart, Users, Clock, Star, Trash2, TrendingUp, Sparkles, Scale } from 'lucide-react';
 import { Game } from '@/types/game';
 
 const FALLBACK_IMAGES: Record<number, string> = {
@@ -163,6 +163,15 @@ export default function GameCard({
             <div className="flex items-center gap-1">
               <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
               <span>{game.rating.toFixed(1)}</span>
+            </div>
+          )}
+          {typeof game.complexity === 'number' && game.complexity > 0 && (
+            <div
+              className="flex items-center gap-1"
+              title={`Complexity ${game.complexity.toFixed(1)} / 5`}
+            >
+              <Scale className="w-3 h-3 text-amber-500/80" />
+              <span>{game.complexity.toFixed(1)}</span>
             </div>
           )}
         </div>

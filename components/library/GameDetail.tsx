@@ -236,21 +236,28 @@ export default function GameDetail({
               onClick={(e) => e.stopPropagation()}
             >
               {/* Hero */}
-              <div className="relative shrink-0 h-48 sm:h-56 bg-stone-950">
+              <div className="relative shrink-0 h-72 sm:h-80 bg-stone-950 flex items-center justify-center overflow-hidden">
                 {game.image ? (
-                  <img
-                    src={game.image}
-                    alt={game.name}
-                    className="w-full h-full object-cover opacity-80"
-                  />
+                  <>
+                    <img
+                      src={game.image}
+                      alt=""
+                      aria-hidden="true"
+                      className="absolute inset-0 w-full h-full object-cover blur-xl opacity-40 scale-110"
+                    />
+                    <img
+                      src={game.image}
+                      alt={game.name}
+                      className="relative max-h-full max-w-full object-contain"
+                    />
+                  </>
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-amber-700">
                     <span className="text-6xl">🎲</span>
                   </div>
                 )}
 
-                <div className="absolute inset-0 bg-gradient-to-t from-stone-950 via-stone-950/40 to-transparent" />
-                <div className="absolute inset-0 bg-gradient-to-r from-stone-950/70 via-transparent to-stone-950/40" />
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-stone-950 via-stone-950/40 to-transparent" />
 
                 <div className="absolute top-3 right-3 flex gap-2">
                   <button

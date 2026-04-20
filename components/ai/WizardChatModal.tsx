@@ -155,7 +155,7 @@ export default function WizardChatModal({ isOpen, onClose, gameContext, inline =
               height={64}
               className="w-14 h-14 mx-auto mb-3 object-contain drop-shadow-[0_0_10px_rgba(251,191,36,0.45)]"
             />
-            <p className="text-stone-300 text-sm mb-1">Settle a rules debate. Ask about a mechanic.</p>
+            <p className="text-stone-300 text-sm mb-1">Settle a rule debate. Ask about a mechanic.</p>
             <p className="text-stone-500 text-xs">
               &ldquo;In Catan, can I build through another player&apos;s settlement?&rdquo;
             </p>

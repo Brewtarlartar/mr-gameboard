@@ -11,6 +11,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Heart,
+  Scale,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useGameStore } from '@/lib/store/gameStore';
@@ -507,6 +508,15 @@ function CatalogCard({
             <div className="flex items-center gap-1">
               <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
               <span>{game.rating.toFixed(1)}</span>
+            </div>
+          )}
+          {typeof game.weight === 'number' && game.weight > 0 && (
+            <div
+              className="flex items-center gap-1"
+              title={`Complexity ${game.weight.toFixed(1)} / 5`}
+            >
+              <Scale className="w-3 h-3 text-amber-500/80" />
+              <span>{game.weight.toFixed(1)}</span>
             </div>
           )}
         </div>
