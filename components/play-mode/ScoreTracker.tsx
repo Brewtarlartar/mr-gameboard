@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { Plus, Minus, Trash2, Trophy, Crown, Users, Swords, HeartHandshake, Sparkles } from 'lucide-react';
+import { Plus, Minus, Trash2, Trophy, Crown, Users, Swords, HeartHandshake } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Game } from '@/types/game';
 import { SessionMode } from '@/lib/store/playHistoryStore';
@@ -261,7 +261,7 @@ export default function ScoreTracker({ game, mode: modeProp, initialPlayers }: S
   return (
     <div className="space-y-4">
       {/* Mode switch */}
-      <div className="grid grid-cols-3 gap-1 p-1 bg-stone-800/60 border border-stone-700/40 rounded-xl">
+      <div className="grid grid-cols-3 gap-1 p-1 bg-stone-950/70 border border-amber-900/40 rounded-xl">
         {[
           { id: 'competitive' as const, label: 'Versus', icon: Swords },
           { id: 'coop' as const, label: 'Co-op', icon: HeartHandshake },
@@ -276,10 +276,10 @@ export default function ScoreTracker({ game, mode: modeProp, initialPlayers }: S
                 haptic.selection();
                 setMode(m.id);
               }}
-              className={`flex items-center justify-center gap-1.5 px-2 py-2 rounded-lg text-xs font-medium transition-all ${
+              className={`flex items-center justify-center gap-1.5 px-2 py-2 rounded-lg text-xs font-serif font-semibold transition-colors ${
                 active
-                  ? 'bg-amber-500 text-stone-900 shadow'
-                  : 'text-stone-300 hover:text-stone-100'
+                  ? 'bg-gradient-to-b from-amber-500 to-amber-700 text-stone-950 border border-amber-400/40 shadow-md shadow-amber-900/30'
+                  : 'text-amber-100/80 hover:text-amber-200'
               }`}
             >
               <Icon className="w-3.5 h-3.5" />
@@ -291,12 +291,11 @@ export default function ScoreTracker({ game, mode: modeProp, initialPlayers }: S
 
       {/* Template picker — hidden in co-op */}
       {mode !== 'coop' && (
-        <div className="flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-amber-400 flex-shrink-0" />
+        <div>
           <select
             value={templateId}
             onChange={(e) => setTemplateId(e.target.value)}
-            className="flex-1 px-3 py-2 bg-stone-800/60 border border-stone-700/40 rounded-lg text-stone-100 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+            className="w-full px-3 py-2 bg-stone-950/70 border border-amber-900/50 rounded-lg text-amber-100 text-sm font-serif focus:outline-none focus:ring-2 focus:ring-amber-500/40 focus:border-amber-500/50 transition-colors"
           >
             {SCORE_TEMPLATES.map((t) => (
               <option key={t.id} value={t.id}>
@@ -321,13 +320,13 @@ export default function ScoreTracker({ game, mode: modeProp, initialPlayers }: S
             }
           }}
           placeholder={mode === 'coop' ? 'Add teammate...' : 'Player name...'}
-          className="flex-1 px-3 py-2.5 bg-stone-800/60 border border-stone-700/40 rounded-lg text-stone-100 placeholder:text-stone-500 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/50"
+          className="flex-1 px-3 py-2.5 bg-stone-950/70 border border-amber-900/50 rounded-lg text-amber-100 placeholder:text-amber-200/40 text-sm font-serif focus:outline-none focus:ring-2 focus:ring-amber-500/40 focus:border-amber-500/50 transition-colors"
         />
         {mode === 'team' && (
           <select
             value={newPlayerTeam}
             onChange={(e) => setNewPlayerTeam(e.target.value)}
-            className="px-3 py-2.5 bg-stone-800/60 border border-stone-700/40 rounded-lg text-stone-100 text-sm focus:outline-none"
+            className="px-3 py-2.5 bg-stone-950/70 border border-amber-900/50 rounded-lg text-amber-100 text-sm font-serif focus:outline-none focus:ring-2 focus:ring-amber-500/40"
           >
             {['A', 'B', 'C', 'D'].map((t) => (
               <option key={t} value={t}>
@@ -339,7 +338,7 @@ export default function ScoreTracker({ game, mode: modeProp, initialPlayers }: S
         <button
           onClick={addPlayer}
           disabled={!newPlayerName.trim()}
-          className="px-3 py-2.5 bg-amber-500 hover:bg-amber-400 disabled:bg-stone-700 disabled:text-stone-500 text-stone-900 rounded-lg transition-all disabled:cursor-not-allowed"
+          className="px-3 py-2.5 bg-gradient-to-b from-amber-500 to-amber-700 hover:from-amber-400 hover:to-amber-600 border border-amber-400/40 disabled:opacity-40 disabled:cursor-not-allowed text-stone-950 rounded-lg shadow-md shadow-amber-900/30 transition-colors"
           aria-label="Add player"
         >
           <Plus className="w-4 h-4" />
@@ -348,18 +347,20 @@ export default function ScoreTracker({ game, mode: modeProp, initialPlayers }: S
 
       {/* Coop: single outcome toggle */}
       {mode === 'coop' && players.length > 0 && (
-        <div className="bg-stone-800/60 border border-stone-700/40 rounded-xl p-4">
-          <p className="text-xs font-medium text-stone-400 mb-2">Group outcome</p>
+        <div className="bg-stone-900/60 border border-amber-900/40 rounded-xl p-4">
+          <p className="text-[10px] uppercase tracking-wider font-serif text-amber-200/70 mb-2">
+            Group outcome
+          </p>
           <div className="grid grid-cols-2 gap-2">
             <button
               onClick={() => {
                 haptic.medium();
                 setCoopOutcome('win');
               }}
-              className={`py-3 rounded-lg font-semibold text-sm transition-all ${
+              className={`py-2.5 rounded-lg font-serif font-semibold text-sm transition-colors border ${
                 coopOutcome === 'win'
-                  ? 'bg-emerald-500 text-stone-900'
-                  : 'bg-stone-700/60 text-stone-300 hover:bg-stone-700'
+                  ? 'bg-emerald-500/90 text-stone-950 border-emerald-400/40 shadow-md shadow-emerald-900/30'
+                  : 'bg-stone-800/70 text-amber-100/80 border-amber-900/40 hover:border-emerald-500/40 hover:text-amber-200'
               }`}
             >
               Victory
@@ -369,10 +370,10 @@ export default function ScoreTracker({ game, mode: modeProp, initialPlayers }: S
                 haptic.medium();
                 setCoopOutcome('loss');
               }}
-              className={`py-3 rounded-lg font-semibold text-sm transition-all ${
+              className={`py-2.5 rounded-lg font-serif font-semibold text-sm transition-colors border ${
                 coopOutcome === 'loss'
-                  ? 'bg-red-500/80 text-stone-50'
-                  : 'bg-stone-700/60 text-stone-300 hover:bg-stone-700'
+                  ? 'bg-red-500/90 text-stone-50 border-red-400/40 shadow-md shadow-red-900/30'
+                  : 'bg-stone-800/70 text-amber-100/80 border-amber-900/40 hover:border-red-500/40 hover:text-amber-200'
               }`}
             >
               Defeat
@@ -389,14 +390,20 @@ export default function ScoreTracker({ game, mode: modeProp, initialPlayers }: S
             return (
               <div
                 key={t.team}
-                className={`p-3 rounded-xl border text-center transition-all ${
+                className={`p-3 rounded-xl border text-center transition-colors ${
                   isLead
                     ? 'bg-amber-500/15 border-amber-500/50'
-                    : 'bg-stone-800/60 border-stone-700/40'
+                    : 'bg-stone-900/60 border-amber-900/40'
                 }`}
               >
-                <p className="text-[10px] uppercase tracking-wider text-stone-400">Team {t.team}</p>
-                <p className={`text-2xl font-bold ${isLead ? 'text-amber-300' : 'text-stone-100'}`}>
+                <p className="text-[10px] uppercase tracking-wider font-serif text-amber-200/70">
+                  Team {t.team}
+                </p>
+                <p
+                  className={`text-2xl font-serif font-bold tabular-nums ${
+                    isLead ? 'text-amber-300' : 'text-amber-100'
+                  }`}
+                >
                   {t.total}
                 </p>
               </div>
@@ -423,10 +430,10 @@ export default function ScoreTracker({ game, mode: modeProp, initialPlayers }: S
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 10 }}
                   transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-                  className={`rounded-xl border transition-all ${
+                  className={`rounded-xl border transition-colors ${
                     isLeader
                       ? 'bg-amber-500/10 border-amber-500/40'
-                      : 'bg-stone-800/60 border-stone-700/40'
+                      : 'bg-stone-900/60 border-amber-900/40'
                   }`}
                 >
                   <div className="flex items-center justify-between gap-2 p-3">
@@ -481,7 +488,7 @@ export default function ScoreTracker({ game, mode: modeProp, initialPlayers }: S
                             <div className="flex items-center gap-1">
                               <button
                                 onClick={() => bumpCategory(player.id, cat.key, -Math.abs(step))}
-                                className="w-8 h-8 flex items-center justify-center bg-stone-700/60 hover:bg-stone-700 text-stone-200 rounded-md active:scale-95 transition-all"
+                                className="w-8 h-8 flex items-center justify-center bg-stone-800/70 hover:bg-stone-700/70 border border-amber-900/40 text-amber-100 rounded-md active:scale-95 transition-colors"
                                 aria-label={`Decrease ${cat.label}`}
                               >
                                 <Minus className="w-3.5 h-3.5" />
@@ -490,11 +497,11 @@ export default function ScoreTracker({ game, mode: modeProp, initialPlayers }: S
                                 type="number"
                                 value={value}
                                 onChange={(e) => setCategory(player.id, cat.key, Number(e.target.value) || 0)}
-                                className="w-12 h-8 text-center bg-stone-900/60 border border-stone-700/40 rounded-md text-stone-100 text-sm tabular-nums focus:outline-none focus:ring-1 focus:ring-amber-500/50"
+                                className="w-12 h-8 text-center bg-stone-950/70 border border-amber-900/40 rounded-md text-amber-100 text-sm font-serif tabular-nums focus:outline-none focus:ring-1 focus:ring-amber-500/50"
                               />
                               <button
                                 onClick={() => bumpCategory(player.id, cat.key, Math.abs(step))}
-                                className="w-8 h-8 flex items-center justify-center bg-stone-700/60 hover:bg-stone-700 text-stone-200 rounded-md active:scale-95 transition-all"
+                                className="w-8 h-8 flex items-center justify-center bg-stone-800/70 hover:bg-stone-700/70 border border-amber-900/40 text-amber-100 rounded-md active:scale-95 transition-colors"
                                 aria-label={`Increase ${cat.label}`}
                               >
                                 <Plus className="w-3.5 h-3.5" />

@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 interface PlayerSetupProps {
   players: Player[];
   onPlayersChange: (players: Player[]) => void;
-  gameAttributes?: string[]; // e.g., ['role', 'class', 'race']
+  gameAttributes?: string[];
 }
 
 export default function PlayerSetup({
@@ -24,7 +24,7 @@ export default function PlayerSetup({
     const newPlayer: Player = {
       id: Date.now().toString(),
       name: newPlayerName.trim(),
-      ...Object.fromEntries(gameAttributes.map(attr => [attr, ''])),
+      ...Object.fromEntries(gameAttributes.map((attr) => [attr, ''])),
     };
 
     onPlayersChange([...players, newPlayer]);
@@ -32,23 +32,24 @@ export default function PlayerSetup({
   };
 
   const removePlayer = (id: string) => {
-    onPlayersChange(players.filter(p => p.id !== id));
+    onPlayersChange(players.filter((p) => p.id !== id));
   };
 
   const updatePlayer = (id: string, updates: Partial<Player>) => {
     onPlayersChange(
-      players.map(p => (p.id === id ? { ...p, ...updates } : p))
+      players.map((p) => (p.id === id ? { ...p, ...updates } : p))
     );
   };
 
   return (
-    <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-6 space-y-4">
-      <div className="flex items-center gap-2 mb-4">
-        <Users className="w-6 h-6 text-purple-500" />
-        <h2 className="text-xl font-bold font-display text-gray-900">Setup Players</h2>
+    <div className="bg-gradient-to-b from-stone-900/80 to-stone-950/80 border border-amber-900/50 rounded-2xl p-5 sm:p-6 space-y-4 shadow-lg shadow-black/30">
+      <div className="flex items-center gap-2">
+        <Users className="w-5 h-5 text-amber-400" />
+        <h2 className="text-lg font-serif font-bold text-amber-100 tracking-wide">
+          Gather the Fellowship
+        </h2>
       </div>
 
-      {/* Add Player */}
       <div className="flex gap-2">
         <input
           type="text"
@@ -61,50 +62,51 @@ export default function PlayerSetup({
             }
           }}
           placeholder="Enter player name..."
-          className="flex-1 px-4 py-3 bg-white border border-gray-200 rounded-xl text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-purple-400 transition-all"
+          className="flex-1 px-3.5 py-2.5 bg-stone-950/70 border border-amber-900/50 rounded-lg text-amber-100 placeholder:text-amber-200/40 text-sm font-serif focus:outline-none focus:ring-2 focus:ring-amber-500/40 focus:border-amber-500/50 transition-colors"
         />
         <button
           onClick={addPlayer}
           disabled={!newPlayerName.trim()}
-          className="px-5 py-3 bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-400 hover:to-purple-500 text-white rounded-xl transition-all flex items-center gap-2 font-ui font-semibold hover:scale-105 active:scale-95 disabled:opacity-50 disabled:hover:scale-100 shadow-lg shadow-purple-200"
+          className="px-4 py-2.5 bg-gradient-to-b from-amber-500 to-amber-700 hover:from-amber-400 hover:to-amber-600 border border-amber-400/40 text-stone-950 font-serif font-semibold rounded-lg flex items-center gap-1.5 shadow-md shadow-amber-900/30 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:from-amber-500 disabled:hover:to-amber-700"
         >
-          <Plus className="w-5 h-5" />
+          <Plus className="w-4 h-4" />
           Add
         </button>
       </div>
 
-      {/* Player List */}
       <AnimatePresence>
-        <div className="space-y-3">
+        <div className="space-y-2.5">
           {players.map((player) => (
             <motion.div
               key={player.id}
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, x: -20 }}
-              className="p-4 bg-gray-50 border border-gray-200 rounded-xl hover:border-gray-300 transition-all"
+              className="p-3.5 bg-stone-900/60 border border-amber-900/40 rounded-xl hover:border-amber-700/50 transition-colors"
             >
-              <div className="flex items-start justify-between gap-4 mb-3">
+              <div className="flex items-start justify-between gap-3 mb-3">
                 <input
                   type="text"
                   value={player.name}
-                  onChange={(e) => updatePlayer(player.id, { name: e.target.value })}
-                  className="flex-1 px-4 py-2 bg-white border border-gray-200 rounded-lg text-gray-900 font-semibold font-ui focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-purple-400 transition-all"
+                  onChange={(e) =>
+                    updatePlayer(player.id, { name: e.target.value })
+                  }
+                  className="flex-1 px-3 py-2 bg-stone-950/70 border border-amber-900/50 rounded-lg text-amber-100 font-serif font-semibold text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/40 focus:border-amber-500/50 transition-colors"
                 />
                 <button
                   onClick={() => removePlayer(player.id)}
-                  className="p-2 hover:bg-red-50 border border-transparent hover:border-red-200 rounded-lg transition-all text-red-500 hover:text-red-600 hover:scale-110 active:scale-95"
+                  className="p-2 hover:bg-red-500/10 border border-transparent hover:border-red-500/30 rounded-lg transition-colors text-stone-400 hover:text-red-400"
+                  aria-label={`Remove ${player.name}`}
                 >
-                  <Trash2 className="w-5 h-5" />
+                  <Trash2 className="w-4 h-4" />
                 </button>
               </div>
 
-              {/* Game-specific attributes */}
               {gameAttributes.length > 0 && (
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-2.5">
                   {gameAttributes.map((attr) => (
                     <div key={attr}>
-                      <label className="block text-xs text-gray-500 mb-1.5 capitalize font-ui font-medium">
+                      <label className="block text-[10px] text-amber-200/60 mb-1 capitalize font-serif uppercase tracking-wider">
                         {attr}
                       </label>
                       <input
@@ -114,7 +116,7 @@ export default function PlayerSetup({
                           updatePlayer(player.id, { [attr]: e.target.value })
                         }
                         placeholder={`Enter ${attr}...`}
-                        className="w-full px-3 py-2 bg-white border border-gray-200 rounded-lg text-gray-900 text-sm font-ui focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-purple-400 transition-all placeholder:text-gray-400"
+                        className="w-full px-2.5 py-1.5 bg-stone-950/70 border border-amber-900/40 rounded-md text-amber-100 text-sm font-serif focus:outline-none focus:ring-2 focus:ring-amber-500/40 focus:border-amber-500/50 transition-colors placeholder:text-amber-200/30"
                       />
                     </div>
                   ))}
@@ -126,9 +128,9 @@ export default function PlayerSetup({
       </AnimatePresence>
 
       {players.length === 0 && (
-        <div className="text-center py-10 text-gray-500">
-          <UserPlus className="w-14 h-14 mx-auto mb-3 opacity-40" />
-          <p className="font-ui text-lg">Add players to get started</p>
+        <div className="text-center py-10 text-amber-200/60">
+          <UserPlus className="w-12 h-12 mx-auto mb-3 opacity-40" />
+          <p className="font-serif italic">Add players to begin the session</p>
         </div>
       )}
     </div>

@@ -70,7 +70,7 @@ export default function GameDetailModal({
 }: GameDetailModalProps) {
   const [liveDetails, setLiveDetails] = useState<LiveGameDetails | null>(null);
   const [isLoadingDetails, setIsLoadingDetails] = useState(false);
-  const [detailsError, setDetailsError] = useState<string | null>(null);
+  const [, setDetailsError] = useState<string | null>(null);
   const [isAdding, setIsAdding] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -81,37 +81,27 @@ export default function GameDetailModal({
   const isOwned = game ? isGameOwned(game.bggId) : false;
   const inWishlist = game ? isInWishlist(game.bggId) : false;
 
-  // Mount check for portal
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Disable body scroll when modal is open
   useEffect(() => {
-    if (isOpen) {
-      const originalOverflow = document.body.style.overflow;
-      const originalPaddingRight = document.body.style.paddingRight;
-      
-      // Get scrollbar width to prevent layout shift
-      const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
-      
-      document.body.style.overflow = 'hidden';
-      document.body.style.paddingRight = `${scrollbarWidth}px`;
-      
-      return () => {
-        document.body.style.overflow = originalOverflow;
-        document.body.style.paddingRight = originalPaddingRight;
-      };
-    }
+    if (!isOpen) return;
+    const originalOverflow = document.body.style.overflow;
+    const originalPaddingRight = document.body.style.paddingRight;
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+    document.body.style.overflow = 'hidden';
+    document.body.style.paddingRight = `${scrollbarWidth}px`;
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      document.body.style.paddingRight = originalPaddingRight;
+    };
   }, [isOpen]);
 
-  // Fetch live details when modal opens
   useEffect(() => {
     if (isOpen && game?.bggId) {
       fetchLiveGameDetails(game.bggId);
     }
-    
-    // Reset state when closing
     if (!isOpen) {
       setLiveDetails(null);
       setDetailsError(null);
@@ -122,33 +112,20 @@ export default function GameDetailModal({
   const fetchLiveGameDetails = async (gameId: string) => {
     setIsLoadingDetails(true);
     setDetailsError(null);
-
     try {
       const response = await fetch(`/api/bgg/details/${gameId}`);
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch game details');
-      }
-
+      if (!response.ok) throw new Error('Failed to fetch game details');
       const data = await response.json();
-      console.log('[GameDetailModal] Received live details:', {
-        id: data.id,
-        name: data.name,
-        descriptionLength: data.description?.length || 0,
-        descriptionPreview: data.description?.substring(0, 200) || 'NO DESCRIPTION'
-      });
       setLiveDetails(data);
-    } catch (error) {
-      console.error('Error fetching live details:', error);
+    } catch {
       setDetailsError('Could not load additional details from BGG');
     } finally {
       setIsLoadingDetails(false);
     }
   };
 
-  const handleAddToCollection = async () => {
+  const handleAddToCollection = () => {
     if (!game) return;
-    
     setIsAdding(true);
     try {
       addGameFromSeed(game);
@@ -160,54 +137,31 @@ export default function GameDetailModal({
   const handleRemoveFromCollection = () => {
     if (!game) return;
     removeGame(`bgg-${game.bggId}`);
-    // Close modal after removing
     onClose();
   };
 
   const handleToggleWishlist = () => {
     if (!game) return;
-    
     if (inWishlist) {
-      // Find the wishlist item by bggId and remove it
-      const wishlistItem = useWishlistStore.getState().wishlist.find(
-        item => item.game.bggId === game.bggId
-      );
-      if (wishlistItem) {
-        removeFromWishlist(wishlistItem.id);
-      }
+      const wishlistItem = useWishlistStore
+        .getState()
+        .wishlist.find((item) => item.game.bggId === game.bggId);
+      if (wishlistItem) removeFromWishlist(wishlistItem.id);
     } else {
       addToWishlist(game);
     }
   };
 
-  // Close on escape key
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
     };
-    
-    if (isOpen) {
-      document.addEventListener('keydown', handleEscape);
-      document.body.style.overflow = 'hidden';
-    }
-    
-    return () => {
-      document.removeEventListener('keydown', handleEscape);
-      document.body.style.overflow = '';
-    };
+    if (isOpen) document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
   }, [isOpen, onClose]);
 
   if (!game) return null;
 
-  // Merge local data with live data
-  // IMPORTANT: Prioritize live details over seed data
-  console.log('[GameDetailModal] Merging data:', {
-    hasLiveDetails: !!liveDetails,
-    liveDescriptionLength: liveDetails?.description?.length || 0,
-    seedDescriptionLength: game.description?.length || 0,
-    willUseLiveDescription: !!(liveDetails?.description)
-  });
-  
   const displayData = {
     name: liveDetails?.name || game.title,
     description: liveDetails?.description || game.description,
@@ -224,7 +178,6 @@ export default function GameDetailModal({
     categories: liveDetails?.categories?.length ? liveDetails.categories : game.categories,
     mechanics: liveDetails?.mechanics?.length ? liveDetails.mechanics : game.mechanics,
     designers: liveDetails?.designers?.length ? liveDetails.designers : game.designers,
-    comments: liveDetails?.comments || [],
     howToPlaySummary: liveDetails?.howToPlaySummary || null,
   };
 
@@ -233,255 +186,266 @@ export default function GameDetailModal({
   const modalContent = (
     <AnimatePresence>
       {isOpen && (
-        <>
-          {/* Backdrop - very high z-index */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[9998] flex items-start sm:items-center justify-center p-2 sm:p-4 overflow-y-auto"
+          onClick={onClose}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="game-detail-title"
+        >
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/40 backdrop-blur-sm"
-            style={{ zIndex: 9998 }}
-            onClick={onClose}
-          />
-
-          {/* Modal - highest z-index */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9, y: 40 }}
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 40 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-            className="fixed inset-4 md:inset-8 lg:inset-12 flex items-center justify-center"
-            style={{ zIndex: 9999 }}
-            onClick={onClose}
+            onClick={(e) => e.stopPropagation()}
+            className="bg-gradient-to-b from-stone-900 to-stone-950 border border-amber-900/50 rounded-2xl shadow-2xl shadow-black/50 w-full max-w-5xl my-4 sm:my-8 flex flex-col max-h-[95vh]"
           >
-            <div 
-              className="bg-white border border-gray-200 rounded-2xl w-full h-full max-w-7xl max-h-[90vh] overflow-hidden shadow-2xl flex flex-col"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Close Button */}
+            {/* Sticky themed header */}
+            <div className="sticky top-0 z-20 flex items-center justify-between gap-3 px-4 sm:px-6 py-4 bg-stone-950/95 backdrop-blur-sm border-b border-amber-900/40 rounded-t-2xl">
+              <div className="min-w-0">
+                <h2
+                  id="game-detail-title"
+                  className="text-xl sm:text-2xl font-serif font-bold text-amber-100 truncate"
+                >
+                  {displayData.name}
+                </h2>
+                {displayData.yearPublished && (
+                  <p className="text-amber-200/60 text-[11px] sm:text-sm font-serif italic flex items-center gap-1.5">
+                    <Calendar className="w-3.5 h-3.5" />
+                    Published {displayData.yearPublished}
+                  </p>
+                )}
+              </div>
               <button
                 onClick={onClose}
-                className="absolute top-4 right-4 z-10 p-2 bg-gray-100 hover:bg-gray-200 rounded-full transition-colors group"
+                aria-label="Close"
+                title="Close (Esc)"
+                className="flex items-center gap-2 px-3 py-2 bg-stone-800/70 hover:bg-red-900/40 border border-amber-900/40 hover:border-red-700/50 text-amber-100 hover:text-red-200 rounded-lg text-sm font-serif transition-colors shrink-0"
               >
-                <X className="w-5 h-5 text-gray-500 group-hover:text-gray-900" />
+                <X className="w-5 h-5" />
+                <span className="hidden sm:inline">Close</span>
               </button>
+            </div>
 
-              {/* Content */}
-              <div className="flex-1 overflow-y-auto">
-                <div className="flex flex-col lg:flex-row min-h-full">
-                  {/* Left Side - Image (Full box art visible, no effects) */}
-                  <div className="lg:w-2/5 flex flex-col items-center justify-start p-4 lg:p-6">
-                    {/* Main image - clean, no cropping */}
-                    <div className="relative w-full flex items-center justify-center lg:sticky lg:top-6">
-                      {imageUrl && !imageError ? (
-                        <img
-                          src={imageUrl}
-                          alt={displayData.name}
-                          className="max-h-[500px] w-auto max-w-full object-contain"
-                          onError={() => {
-                            console.log(`[GameDetailModal] Image failed to load: ${imageUrl}`);
-                            setImageError(true);
-                          }}
-                        />
-                      ) : (
-                        <div className="w-full aspect-[3/4] max-h-[500px] bg-gradient-to-br from-purple-50 to-gray-100 flex items-center justify-center rounded-lg">
-                          <span className="text-8xl opacity-30">🎲</span>
-                        </div>
-                      )}
-                      
-                      {/* Rank Badge */}
-                      {displayData.rank && (
-                        <div className="absolute top-2 left-2 flex items-center gap-2 px-3 py-2 bg-amber-500/90 rounded-lg">
-                          <Trophy className="w-4 h-4 text-amber-900" />
-                          <span className="text-amber-900 font-bold">#{displayData.rank}</span>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Mobile Title Overlay */}
-                    <div className="w-full p-4 lg:hidden">
-                      <h1 className="text-2xl font-bold text-gray-900 mb-1 text-center">{displayData.name}</h1>
-                      {displayData.yearPublished && (
-                        <p className="text-gray-400 text-center">({displayData.yearPublished})</p>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Right Side - Details */}
-                  <div className="lg:w-3/5 p-6 lg:p-8 space-y-6">
-                    {/* Desktop Title */}
-                    <div className="hidden lg:block">
-                      <h1 className="text-4xl font-bold text-gray-900 mb-2">{displayData.name}</h1>
-                      {displayData.yearPublished && (
-                        <p className="text-gray-400 flex items-center gap-2">
-                          <Calendar className="w-4 h-4" />
-                          Published {displayData.yearPublished}
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Stats Grid */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <StatCard
-                        icon={<Users className="w-5 h-5" />}
-                        label="Players"
-                        value={
-                          displayData.minPlayers && displayData.maxPlayers
-                            ? `${displayData.minPlayers}–${displayData.maxPlayers}`
-                            : 'N/A'
-                        }
-                        color="cyan"
+            {/* Body */}
+            <div className="flex-1 overflow-y-auto">
+              <div className="flex flex-col lg:flex-row">
+                {/* Image column */}
+                <div className="lg:w-2/5 p-4 lg:p-6 flex flex-col items-center justify-start lg:border-r lg:border-amber-900/30">
+                  <div className="relative w-full flex items-center justify-center lg:sticky lg:top-4">
+                    {imageUrl && !imageError ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={imageUrl}
+                        alt={displayData.name}
+                        className="max-h-[420px] lg:max-h-[500px] w-auto max-w-full object-contain rounded-lg shadow-lg shadow-black/40"
+                        onError={() => setImageError(true)}
                       />
-                      <StatCard
-                        icon={<Clock className="w-5 h-5" />}
-                        label="Play Time"
-                        value={displayData.playingTime ? `${displayData.playingTime} min` : 'N/A'}
-                        color="emerald"
-                      />
-                      <StatCard
-                        icon={<Scale className="w-5 h-5" />}
-                        label="Complexity"
-                        value={displayData.weight ? `${displayData.weight.toFixed(2)} / 5` : 'N/A'}
-                        color="orange"
-                      />
-                      <StatCard
-                        icon={<Star className="w-5 h-5" />}
-                        label="BGG Rating"
-                        value={displayData.rating ? displayData.rating.toFixed(1) : 'N/A'}
-                        subValue={displayData.numRatings ? `${(displayData.numRatings / 1000).toFixed(1)}K votes` : undefined}
-                        color="yellow"
-                      />
-                    </div>
-
-                    {/* Action Buttons */}
-                    <div className="flex flex-wrap gap-3">
-                      {isOwned ? (
-                        <button
-                          onClick={handleRemoveFromCollection}
-                          className="flex items-center gap-2 px-6 py-3 bg-red-600/20 hover:bg-red-600/30 border border-red-500/30 text-red-400 rounded-lg transition-all"
-                        >
-                          <Trash2 className="w-5 h-5" />
-                          Remove from Collection
-                        </button>
-                      ) : (
-                        <>
-                          <button
-                            onClick={handleAddToCollection}
-                            disabled={isAdding}
-                            className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white rounded-lg transition-all disabled:opacity-50"
-                          >
-                            {isAdding ? (
-                              <Check className="w-5 h-5" />
-                            ) : (
-                              <Plus className="w-5 h-5" />
-                            )}
-                            {isAdding ? 'Added!' : 'Add to Collection'}
-                          </button>
-                          
-                          {/* Wishlist Button */}
-                          <button
-                            onClick={handleToggleWishlist}
-                            className={`flex items-center gap-2 px-6 py-3 rounded-lg transition-all border ${
-                              inWishlist
-                                ? 'bg-pink-50 hover:bg-pink-100 border-pink-200 text-pink-600'
-                                : 'bg-gray-100 hover:bg-gray-200 border-gray-300 text-gray-700'
-                            }`}
-                          >
-                            <Heart className={`w-5 h-5 ${inWishlist ? 'fill-pink-500' : ''}`} />
-                            {inWishlist ? 'Remove from Wishlist' : 'Add to Wishlist'}
-                          </button>
-                        </>
-                      )}
-
-                      {/* Amazon Affiliate Button - ALWAYS visible (revenue source) */}
-                      <button
-                        onClick={() => {
-                          const gameName = displayData.name || game.title || 'board game';
-                          window.open(`https://www.amazon.com/s?k=${encodeURIComponent(gameName)}&tag=mrboardgame-20`, '_blank');
-                        }}
-                        className="flex items-center justify-center gap-2 px-4 py-2 bg-yellow-400 hover:bg-yellow-500 text-black font-bold rounded-lg transition-colors"
-                      >
-                        <ShoppingCart className="w-4 h-4" />
-                        Buy on Amazon
-                      </button>
-                      
-                      {/* BGG Attribution Link - Required for using BGG data */}
-                      <button
-                        onClick={() => {
-                          const bggId = game.bggId || game.wikidataId || '';
-                          window.open(`https://boardgamegeek.com/boardgame/${bggId}`, '_blank');
-                        }}
-                        className="flex items-center justify-center gap-2 px-3 py-2 bg-transparent hover:bg-gray-50 border border-gray-300 text-gray-500 hover:text-gray-900 text-sm rounded-lg transition-colors"
-                      >
-                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
-                          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
-                        </svg>
-                        View on BGG
-                      </button>
-                    </div>
-
-                    {/* Description - Rendered as HTML */}
-                    <div>
-                      <h2 className="text-lg font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                        <BookOpen className="w-5 h-5 text-purple-500" />
-                        About
-                        {isLoadingDetails && (
-                          <>
-                            <Loader2 className="w-4 h-4 animate-spin text-purple-500" />
-                            <span className="text-xs text-purple-500 font-normal">Loading full description...</span>
-                          </>
-                        )}
-                        {liveDetails?.description && !isLoadingDetails && (
-                          <span className="text-xs text-green-400 font-normal">✓ Full BGG description</span>
-                        )}
-                      </h2>
-                      {isLoadingDetails && !displayData.description ? (
-                        <div className="space-y-2">
-                          <div className="h-4 bg-gray-200 rounded animate-pulse w-full" />
-                          <div className="h-4 bg-gray-200 rounded animate-pulse w-5/6" />
-                          <div className="h-4 bg-gray-200 rounded animate-pulse w-4/6" />
-                          <div className="h-4 bg-gray-200 rounded animate-pulse w-full" />
-                          <div className="h-4 bg-gray-200 rounded animate-pulse w-3/4" />
-                        </div>
-                      ) : displayData.description ? (
-                        <div 
-                          className="text-gray-700 leading-relaxed space-y-4 [&>p]:mb-4 [&>em]:italic [&>strong]:font-semibold [&>a]:text-purple-600 [&>a:hover]:underline [&_a]:text-purple-600 [&_a:hover]:underline [&_p]:mb-4 [&_em]:italic [&_strong]:font-semibold"
-                          dangerouslySetInnerHTML={{ 
-                            __html: displayData.description.length > 2000
-                              ? displayData.description.slice(0, 2000) + '...'
-                              : displayData.description 
-                          }}
-                        />
-                      ) : (
-                        <p className="text-gray-500 italic">No description available.</p>
-                      )}
-                    </div>
-
-                    {/* How to Play Summary */}
-                    {displayData.howToPlaySummary && (
-                      <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
-                        <h3 className="text-sm font-semibold text-emerald-600 mb-2 flex items-center gap-2">
-                          <BookOpen className="w-4 h-4" />
-                          Quick Overview
-                        </h3>
-                        <p className="text-gray-700 text-sm leading-relaxed">
-                          {displayData.howToPlaySummary}
-                        </p>
+                    ) : (
+                      <div className="w-full aspect-[3/4] max-h-[420px] bg-gradient-to-br from-stone-900 to-stone-950 border border-amber-900/40 flex items-center justify-center rounded-lg">
+                        <span className="text-7xl opacity-40">🎲</span>
                       </div>
                     )}
 
-                    {/* Categories & Mechanics */}
-                    <div className="grid md:grid-cols-2 gap-4">
-                      {displayData.categories && displayData.categories.length > 0 && (
+                    {displayData.rank && (
+                      <div className="absolute top-2 left-2 flex items-center gap-1.5 px-2.5 py-1 bg-amber-600/95 border border-amber-400/40 rounded-md text-stone-950 text-xs font-bold shadow-md">
+                        <Trophy className="w-3.5 h-3.5" />
+                        <span>#{displayData.rank}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Details column */}
+                <div className="lg:w-3/5 p-4 sm:p-6 lg:p-8 space-y-6">
+                  {/* Stats grid */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <StatCard
+                      icon={<Users className="w-4 h-4" />}
+                      label="Players"
+                      value={
+                        displayData.minPlayers && displayData.maxPlayers
+                          ? `${displayData.minPlayers}–${displayData.maxPlayers}`
+                          : 'N/A'
+                      }
+                    />
+                    <StatCard
+                      icon={<Clock className="w-4 h-4" />}
+                      label="Play Time"
+                      value={
+                        displayData.playingTime
+                          ? `${displayData.playingTime}m`
+                          : 'N/A'
+                      }
+                    />
+                    <StatCard
+                      icon={<Scale className="w-4 h-4" />}
+                      label="Complexity"
+                      value={
+                        displayData.weight
+                          ? `${displayData.weight.toFixed(2)} / 5`
+                          : 'N/A'
+                      }
+                    />
+                    <StatCard
+                      icon={<Star className="w-4 h-4 fill-amber-400" />}
+                      label="BGG Rating"
+                      value={
+                        displayData.rating ? displayData.rating.toFixed(1) : 'N/A'
+                      }
+                      subValue={
+                        displayData.numRatings
+                          ? `${(displayData.numRatings / 1000).toFixed(1)}K votes`
+                          : undefined
+                      }
+                    />
+                  </div>
+
+                  {/* Action buttons */}
+                  <div className="flex flex-wrap gap-2 sm:gap-3">
+                    {isOwned ? (
+                      <button
+                        onClick={handleRemoveFromCollection}
+                        className="flex items-center gap-2 px-4 py-2.5 bg-red-900/30 hover:bg-red-900/50 border border-red-700/50 text-red-200 rounded-lg font-serif text-sm transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        Remove from Library
+                      </button>
+                    ) : (
+                      <>
+                        <button
+                          onClick={handleAddToCollection}
+                          disabled={isAdding}
+                          className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-b from-amber-500 to-amber-700 hover:from-amber-400 hover:to-amber-600 disabled:opacity-60 border border-amber-400/40 text-stone-950 rounded-lg font-serif font-semibold text-sm shadow-md shadow-amber-900/30 transition-colors"
+                        >
+                          {isAdding ? (
+                            <Check className="w-4 h-4" />
+                          ) : (
+                            <Plus className="w-4 h-4" />
+                          )}
+                          {isAdding ? 'Added!' : 'Add to Library'}
+                        </button>
+
+                        <button
+                          onClick={handleToggleWishlist}
+                          className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border font-serif text-sm transition-colors ${
+                            inWishlist
+                              ? 'bg-rose-900/30 hover:bg-rose-900/50 border-rose-700/50 text-rose-200'
+                              : 'bg-stone-800/70 hover:bg-stone-700/70 border-amber-900/40 text-amber-100'
+                          }`}
+                        >
+                          <Heart
+                            className={`w-4 h-4 ${
+                              inWishlist ? 'fill-rose-300' : ''
+                            }`}
+                          />
+                          {inWishlist ? 'In Wishlist' : 'Add to Wishlist'}
+                        </button>
+                      </>
+                    )}
+
+                    <button
+                      onClick={() => {
+                        const gameName =
+                          displayData.name || game.title || 'board game';
+                        window.open(
+                          `https://www.amazon.com/s?k=${encodeURIComponent(
+                            gameName
+                          )}&tag=mrboardgame-20`,
+                          '_blank',
+                          'noopener,noreferrer'
+                        );
+                      }}
+                      className="flex items-center gap-2 px-4 py-2.5 bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-100 rounded-lg font-serif text-sm transition-colors"
+                    >
+                      <ShoppingCart className="w-4 h-4" />
+                      Buy on Amazon
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        const bggId = game.bggId || game.wikidataId || '';
+                        window.open(
+                          `https://boardgamegeek.com/boardgame/${bggId}`,
+                          '_blank',
+                          'noopener,noreferrer'
+                        );
+                      }}
+                      className="flex items-center gap-2 px-3 py-2.5 bg-stone-800/70 hover:bg-stone-700/70 border border-amber-900/40 text-amber-200/80 hover:text-amber-100 text-sm font-serif rounded-lg transition-colors"
+                    >
+                      View on BGG
+                    </button>
+                  </div>
+
+                  {/* Description */}
+                  <div>
+                    <h3 className="text-sm font-serif font-semibold text-amber-200/90 uppercase tracking-wider mb-3 flex items-center gap-2">
+                      <BookOpen className="w-4 h-4 text-amber-400" />
+                      About
+                      {isLoadingDetails && (
+                        <span className="flex items-center gap-1 text-[11px] normal-case tracking-normal text-amber-300/80 font-serif italic">
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                          loading full description…
+                        </span>
+                      )}
+                    </h3>
+                    {isLoadingDetails && !displayData.description ? (
+                      <div className="space-y-2">
+                        {[...Array(4)].map((_, i) => (
+                          <div
+                            key={i}
+                            className="h-4 bg-stone-800/60 rounded animate-pulse"
+                            style={{ width: `${100 - i * 10}%` }}
+                          />
+                        ))}
+                      </div>
+                    ) : displayData.description ? (
+                      <div
+                        className="text-amber-100/90 leading-relaxed font-serif text-sm sm:text-base [&_p]:mb-3 [&_em]:italic [&_strong]:font-semibold [&_strong]:text-amber-100 [&_a]:text-amber-300 [&_a:hover]:text-amber-200 [&_a:hover]:underline"
+                        dangerouslySetInnerHTML={{
+                          __html:
+                            displayData.description.length > 2000
+                              ? displayData.description.slice(0, 2000) + '…'
+                              : displayData.description,
+                        }}
+                      />
+                    ) : (
+                      <p className="text-stone-400 italic font-serif">
+                        No description available.
+                      </p>
+                    )}
+                  </div>
+
+                  {/* How to play */}
+                  {displayData.howToPlaySummary && (
+                    <div className="bg-stone-950/60 border border-amber-900/40 rounded-xl p-4">
+                      <h3 className="text-xs font-serif font-semibold text-amber-200/90 uppercase tracking-wider mb-2 flex items-center gap-2">
+                        <BookOpen className="w-3.5 h-3.5 text-amber-400" />
+                        Quick Overview
+                      </h3>
+                      <p className="text-amber-100/90 text-sm leading-relaxed font-serif">
+                        {displayData.howToPlaySummary}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Tags */}
+                  <div className="grid md:grid-cols-2 gap-4">
+                    {displayData.categories &&
+                      displayData.categories.length > 0 && (
                         <div>
-                          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+                          <h3 className="text-[11px] font-serif font-semibold text-amber-200/70 uppercase tracking-wider mb-2">
                             Categories
                           </h3>
-                          <div className="flex flex-wrap gap-2">
+                          <div className="flex flex-wrap gap-1.5">
                             {displayData.categories.slice(0, 6).map((cat, i) => (
                               <span
                                 key={i}
-                                className="px-2.5 py-1 bg-purple-50 border border-purple-200 text-purple-600 text-xs rounded-lg"
+                                className="px-2.5 py-1 bg-amber-500/15 border border-amber-500/40 text-amber-100 text-xs rounded-lg font-serif"
                               >
                                 {cat}
                               </span>
@@ -490,16 +454,17 @@ export default function GameDetailModal({
                         </div>
                       )}
 
-                      {displayData.mechanics && displayData.mechanics.length > 0 && (
+                    {displayData.mechanics &&
+                      displayData.mechanics.length > 0 && (
                         <div>
-                          <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 flex items-center gap-1">
+                          <h3 className="text-[11px] font-serif font-semibold text-amber-200/70 uppercase tracking-wider mb-2 flex items-center gap-1">
                             <Wrench className="w-3 h-3" /> Mechanics
                           </h3>
-                          <div className="flex flex-wrap gap-2">
+                          <div className="flex flex-wrap gap-1.5">
                             {displayData.mechanics.slice(0, 6).map((mech, i) => (
                               <span
                                 key={i}
-                                className="px-2.5 py-1 bg-teal-50 border border-teal-200 text-teal-600 text-xs rounded-lg"
+                                className="px-2.5 py-1 bg-stone-800/70 border border-amber-900/50 text-amber-100 text-xs rounded-lg font-serif"
                               >
                                 {mech}
                               </span>
@@ -507,64 +472,58 @@ export default function GameDetailModal({
                           </div>
                         </div>
                       )}
-                    </div>
+                  </div>
 
-                    {/* Designers */}
-                    {displayData.designers && displayData.designers.length > 0 && (
+                  {/* Designers */}
+                  {displayData.designers &&
+                    displayData.designers.length > 0 && (
                       <div>
-                        <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 flex items-center gap-1">
+                        <h3 className="text-[11px] font-serif font-semibold text-amber-200/70 uppercase tracking-wider mb-2 flex items-center gap-1">
                           <User className="w-3 h-3" /> Designed by
                         </h3>
-                        <p className="text-gray-700">
+                        <p className="text-amber-100 font-serif text-sm">
                           {displayData.designers.slice(0, 3).join(', ')}
                         </p>
                       </div>
                     )}
-
-                  </div>
                 </div>
               </div>
             </div>
           </motion.div>
-        </>
+        </motion.div>
       )}
     </AnimatePresence>
   );
 
-  // Render via portal to ensure modal is above all other content
   if (!mounted) return null;
-  
   return createPortal(modalContent, document.body);
 }
 
-// Stat Card Component
 function StatCard({
   icon,
   label,
   value,
   subValue,
-  color,
 }: {
   icon: React.ReactNode;
   label: string;
   value: string;
   subValue?: string;
-  color: 'cyan' | 'emerald' | 'orange' | 'yellow';
 }) {
-  const colors = {
-    cyan: 'text-purple-600 bg-purple-50 border-purple-200',
-    emerald: 'text-emerald-600 bg-emerald-50 border-emerald-200',
-    orange: 'text-orange-600 bg-orange-50 border-orange-200',
-    yellow: 'text-yellow-600 bg-yellow-50 border-yellow-200',
-  };
-
   return (
-    <div className={`p-4 rounded-xl border ${colors[color]}`}>
-      <div className={`${colors[color].split(' ')[0]} mb-2`}>{icon}</div>
-      <p className="text-xs text-gray-500 uppercase tracking-wide">{label}</p>
-      <p className="text-lg font-bold text-gray-900">{value}</p>
-      {subValue && <p className="text-xs text-gray-500">{subValue}</p>}
+    <div className="p-3 rounded-xl border border-amber-900/40 bg-stone-950/60">
+      <div className="text-amber-400 mb-1.5">{icon}</div>
+      <p className="text-[10px] text-amber-200/60 uppercase tracking-wider font-serif">
+        {label}
+      </p>
+      <p className="text-base font-bold font-serif text-amber-100 leading-tight">
+        {value}
+      </p>
+      {subValue && (
+        <p className="text-[10px] text-stone-500 mt-0.5 font-serif italic">
+          {subValue}
+        </p>
+      )}
     </div>
   );
 }
-

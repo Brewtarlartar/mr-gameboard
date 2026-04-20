@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getGameDetails } from '@/lib/bgg';
 import { fetchBggThing, hasBggToken, type BggCacheRow } from '@/lib/bgg/api';
+import { getStapleGames } from '@/lib/games/staples';
 import { GameDetail } from '@/types/game';
 
 export const runtime = 'nodejs';
@@ -21,6 +22,42 @@ function getServiceClient() {
 function isRich(d: GameDetail | null): boolean {
   if (!d) return false;
   return Boolean(d.description && d.description.length > 200 && (d.image || d.thumbnail));
+}
+
+/**
+ * Look up a curated staple by BGG id. Staples have known-good
+ * cf.geekdo-images.com URLs that are kept fresh in source, so we use them
+ * to patch over stale or missing image data in the Supabase cache.
+ */
+function findStaple(bggId: number): GameDetail | undefined {
+  return getStapleGames().find((g) => g.bggId === bggId) as GameDetail | undefined;
+}
+
+/**
+ * Merge a staple's known-good image/thumbnail (and any other fields it has
+ * that the cached row is missing) onto the cached detail. The staple wins
+ * for image fields because the Supabase cache has historically held stale
+ * geekdo URLs that 404. Description/mechanics from cache still win.
+ */
+function applyStapleOverlay(detail: GameDetail): GameDetail {
+  if (!detail.bggId) return detail;
+  const staple = findStaple(detail.bggId);
+  if (!staple) return detail;
+
+  return {
+    ...detail,
+    image: staple.image || detail.image,
+    thumbnail: staple.thumbnail || detail.thumbnail,
+    description: detail.description || staple.description,
+    minPlayers: detail.minPlayers ?? staple.minPlayers,
+    maxPlayers: detail.maxPlayers ?? staple.maxPlayers,
+    playingTime: detail.playingTime ?? staple.playingTime,
+    yearPublished: detail.yearPublished ?? staple.yearPublished,
+    rating: detail.rating ?? staple.rating,
+    categories:
+      detail.categories && detail.categories.length > 0 ? detail.categories : staple.categories,
+    genres: detail.genres && detail.genres.length > 0 ? detail.genres : staple.genres,
+  };
 }
 
 function rowToDetail(row: BggCacheRow): GameDetail {
@@ -78,16 +115,17 @@ export async function GET(
   try {
     const cached = await getGameDetails(bggId);
 
-    // Fast path: rich cached row, return it directly.
+    // Fast path: rich cached row, return it directly (with staple overlay so
+    // any stale geekdo image URLs get replaced by curated current ones).
     if (isRich(cached)) {
-      return NextResponse.json({ game: cached, source: 'cache' });
+      return NextResponse.json({ game: applyStapleOverlay(cached!), source: 'cache' });
     }
 
     // Sparse or missing — try to enrich from BGG (uses BGG_API_TOKEN if set).
     const fresh = await backfillFromBgg(bggId);
     if (fresh) {
       return NextResponse.json({
-        game: rowToDetail(fresh),
+        game: applyStapleOverlay(rowToDetail(fresh)),
         source: cached ? 'cache+backfill' : 'bgg',
       });
     }
@@ -95,12 +133,20 @@ export async function GET(
     // BGG unreachable. Return the sparse cached row (if any) so the UI still works.
     if (cached) {
       return NextResponse.json({
-        game: cached,
+        game: applyStapleOverlay(cached),
         source: 'cache-sparse',
         warning: hasBggToken()
           ? 'BGG enrichment failed; showing partial cached data.'
           : 'No BGG_API_TOKEN set; showing partial cached data. Add BGG_API_TOKEN to .env.local to backfill rich details.',
       });
+    }
+
+    // Nothing in cache and BGG unreachable — fall back to a curated staple
+    // record if we have one. Catan, Monopoly, UNO, etc. all live here so the
+    // app never returns a 404 for ubiquitous classics.
+    const staple = findStaple(bggId);
+    if (staple) {
+      return NextResponse.json({ game: staple, source: 'staple' });
     }
 
     return NextResponse.json(

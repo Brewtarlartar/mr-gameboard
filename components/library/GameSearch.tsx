@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Search, Loader2, X, History, Clock, Plus, BookOpen } from 'lucide-react';
+import Image from 'next/image';
+import { Search, Loader2, X, History, Clock, Plus } from 'lucide-react';
 import {
   debouncedSearch,
   saveSearchHistory,
@@ -79,7 +80,14 @@ export default function GameSearch({ onSelectGame }: GameSearchProps) {
   return (
     <div className="relative w-full">
       <div className="relative">
-        <BookOpen className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-amber-400/80 pointer-events-none" />
+        <Image
+          src="/Wizard.png"
+          alt=""
+          width={28}
+          height={28}
+          aria-hidden="true"
+          className="absolute left-2.5 top-1/2 -translate-y-1/2 w-7 h-7 object-contain pointer-events-none drop-shadow-[0_0_4px_rgba(251,191,36,0.5)]"
+        />
         <input
           type="text"
           value={query}
@@ -89,8 +97,8 @@ export default function GameSearch({ onSelectGame }: GameSearchProps) {
               setShowHistory(true);
             }
           }}
-          placeholder="Search the catalog to add a tome to thy library…"
-          className="w-full pl-10 pr-10 py-3 bg-stone-900/70 border border-amber-900/50 rounded-xl text-amber-100 placeholder-amber-200/40 font-serif italic focus:outline-none focus:border-amber-500/60 focus:ring-2 focus:ring-amber-500/30 transition-colors"
+          placeholder="Search the catalog to add a tome…"
+          className="w-full pl-12 pr-10 py-3 bg-stone-900/70 border border-amber-900/50 rounded-xl text-amber-100 placeholder-amber-200/40 font-serif italic text-xs sm:text-sm focus:outline-none focus:border-amber-500/60 focus:ring-2 focus:ring-amber-500/30 transition-colors"
         />
         {query && (
           <button

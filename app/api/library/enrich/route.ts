@@ -1,5 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getGameDetails } from '@/lib/bgg';
+import { getStapleGames } from '@/lib/games/staples';
+import { Game } from '@/types/game';
+
+/**
+ * Overlay a known-good staple record (curated cf.geekdo-images.com URLs) on
+ * top of an enriched game. Image fields from the staple win because the
+ * Supabase cache has historically stored stale geekdo URLs that 404. All
+ * other fields prefer the existing/cached value.
+ */
+function applyStapleOverlay<T extends Partial<Game>>(game: T): T {
+  if (!game.bggId) return game;
+  const staple = getStapleGames().find((g) => g.bggId === game.bggId);
+  if (!staple) return game;
+
+  return {
+    ...game,
+    image: staple.image || game.image,
+    thumbnail: staple.thumbnail || game.thumbnail,
+  };
+}
 
 /**
  * API endpoint to enrich game descriptions from BGG
@@ -28,12 +48,14 @@ export async function POST(request: NextRequest) {
           continue;
         }
 
-        // Skip if game already has images AND good description (>200 characters)
+        // Skip if game already has images AND good description (>200 characters).
+        // Even on the skip path we run the staple overlay so any stale image
+        // URLs get replaced by curated current ones.
         const hasCompleteData = (game.image || game.thumbnail) && 
                                 game.description && 
                                 game.description.length > 200;
         if (hasCompleteData) {
-          enrichedGames.push(game);
+          enrichedGames.push(applyStapleOverlay(game));
           continue;
         }
 
@@ -47,7 +69,7 @@ export async function POST(request: NextRequest) {
           cacheHits++;
           
           // Merge cached data with existing game data
-          enrichedGames.push({
+          enrichedGames.push(applyStapleOverlay({
             ...game,
             description: cachedGame.description || game.description,
             image: cachedGame.image || game.image,
@@ -64,7 +86,7 @@ export async function POST(request: NextRequest) {
             mechanics: game.mechanics?.length > 0 ? game.mechanics : cachedGame.mechanics,
             genres: game.genres?.length > 0 ? game.genres : cachedGame.genres,
             rulebookUrl: game.rulebookUrl || cachedGame.rulebookUrl,
-          });
+          }));
           continue;
         }
 
@@ -170,7 +192,7 @@ export async function POST(request: NextRequest) {
           rulebookUrl: game.rulebookUrl || `https://boardgamegeek.com/boardgame/${game.bggId}/files`,
         };
 
-        enrichedGames.push(enrichedGame);
+        enrichedGames.push(applyStapleOverlay(enrichedGame));
         console.log(`[Enrich] ✅ Successfully enriched ${game.name} from BGG API`);
 
         // Add a delay to avoid overwhelming BGG API

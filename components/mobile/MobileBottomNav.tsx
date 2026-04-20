@@ -14,7 +14,7 @@ export default function MobileBottomNav() {
   const navItems = [
     { href: '/', label: 'Home', icon: Home },
     { href: '/library', label: 'Library', icon: Library },
-    { href: '/discover', label: 'Discover', icon: Compass },
+    { href: '/discover', label: 'Catalog', icon: Compass },
     { href: '/play', label: 'Play', icon: Play },
     { href: '/analytics', label: 'Stats', icon: BarChart3 },
     { href: '/me', label: 'Me', icon: User },

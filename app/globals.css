@@ -103,10 +103,19 @@ body::before {
   align-items: center;
   justify-content: flex-start;
   pointer-events: none;
-  padding-top: calc(3.5rem + clamp(0.5rem, 1.5vh, 1.5rem));
+  /* On mobile the top nav is hidden, so the watermark sits flush at the top
+     with just a small breathing space. From md+ we add room for the 3.5rem
+     fixed nav above it. */
+  padding-top: clamp(0.5rem, 1.5vh, 1.5rem);
   user-select: none;
   text-align: center;
   transition: opacity 0.25s ease;
+}
+
+@media (min-width: 768px) {
+  .tome-watermark {
+    padding-top: calc(3.5rem + clamp(0.5rem, 1.5vh, 1.5rem));
+  }
 }
 
 body.ai-panel-open .tome-watermark {

@@ -1,42 +1,25 @@
 'use client';
 
+import { useState } from 'react';
+import Link from 'next/link';
+import Image from 'next/image';
 import { motion } from 'framer-motion';
-import { Library, Heart, BarChart3, Download, Trash2, Cloud, User } from 'lucide-react';
+import {
+  Library,
+  Heart,
+  BarChart3,
+  Trash2,
+  Compass,
+  Play,
+  ChevronRight,
+} from 'lucide-react';
 import { useGameStore } from '@/lib/store/gameStore';
 import { usePlayHistoryStore } from '@/lib/store/playHistoryStore';
-import { useState } from 'react';
 
 export default function MePage() {
   const { games, favorites, resetLibrary } = useGameStore();
   const { sessions, clearHistory } = usePlayHistoryStore();
   const [confirmClear, setConfirmClear] = useState(false);
-
-  const downloadJson = (filename: string, data: unknown) => {
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const downloadCsv = (filename: string, rows: Record<string, unknown>[]) => {
-    if (rows.length === 0) return;
-    const headers = Object.keys(rows[0]);
-    const escape = (v: unknown) => {
-      const s = v == null ? '' : String(v);
-      return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-    };
-    const csv = [headers.join(','), ...rows.map(r => headers.map(h => escape(r[h])).join(','))].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
 
   const handleClearAll = () => {
     resetLibrary();
@@ -44,110 +27,117 @@ export default function MePage() {
     setConfirmClear(false);
   };
 
+  const totalHours = Math.round(
+    sessions.reduce((sum, s) => sum + (s.duration || 0), 0) / 60,
+  );
+
   return (
-    <div className="space-y-8 pb-12">
+    <div className="space-y-6 pt-28 md:pt-32 pb-12">
+      {/* Header */}
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}>
-        <div className="flex items-center gap-3 mb-1">
-          <User className="w-7 h-7 text-amber-400" />
-          <h1 className="text-3xl md:text-4xl font-bold text-stone-100">Profile</h1>
-        </div>
-        <p className="text-stone-400 text-sm">Your stats, data, and settings.</p>
+        <h1 className="text-3xl md:text-4xl font-serif font-bold text-amber-100 leading-tight">
+          Thy Profile
+        </h1>
+        <p className="text-amber-200/70 text-sm font-serif italic">
+          A glance at thy collection, thy deeds, and thy keep.
+        </p>
       </motion.div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <StatCard label="Games" value={games.length} icon={<Library className="w-5 h-5 text-amber-400" />} />
-        <StatCard label="Favorites" value={favorites.length} icon={<Heart className="w-5 h-5 text-pink-400" />} />
-        <StatCard label="Sessions" value={sessions.length} icon={<BarChart3 className="w-5 h-5 text-sky-400" />} />
+      {/* Stat cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <StatCard
+          label="Games"
+          value={games.length}
+          icon={<Library className="w-4 h-4 text-amber-400" />}
+        />
+        <StatCard
+          label="Favorites"
+          value={favorites.length}
+          icon={<Heart className="w-4 h-4 text-amber-400" />}
+        />
+        <StatCard
+          label="Sessions"
+          value={sessions.length}
+          icon={<BarChart3 className="w-4 h-4 text-amber-400" />}
+        />
+        <StatCard
+          label="Hours Played"
+          value={totalHours}
+          icon={<Play className="w-4 h-4 text-amber-400" />}
+        />
       </div>
 
-      <section className="bg-stone-800/40 border border-stone-700/40 rounded-2xl p-5">
-        <div className="flex items-center gap-2 mb-3">
-          <Cloud className="w-5 h-5 text-amber-400" />
-          <h2 className="text-lg font-semibold text-stone-100">Cloud sync</h2>
+      {/* Quick links */}
+      <section className="bg-gradient-to-b from-stone-900/80 to-stone-950/80 border border-amber-900/50 rounded-2xl p-5 shadow-lg shadow-black/20">
+        <h2 className="text-xs font-serif font-semibold text-amber-200 uppercase tracking-widest mb-4">
+          Thy Halls
+        </h2>
+        <div className="space-y-2">
+          <QuickLink
+            href="/library"
+            title="Thy Library"
+            description={`${games.length} ${games.length === 1 ? 'tome' : 'tomes'} in thy collection`}
+            icon="/tome-book.png"
+          />
+          <QuickLink
+            href="/discover"
+            title="The Catalog"
+            description="Browse the vast hall of games"
+            icon="/map.png"
+          />
+          <QuickLink
+            href="/play"
+            title="The Arena"
+            description="Begin a new game at thy table"
+            icon="/crystal-ball.png"
+          />
+          <QuickLink
+            href="/analytics"
+            title="The Chronicle"
+            description={`${sessions.length} ${sessions.length === 1 ? 'tale' : 'tales'} scribed`}
+            icon="/skip-the-rules.png"
+          />
         </div>
-        <p className="text-stone-400 text-sm mb-4">
-          Sign in to back up your library and play history across devices. The Tome works fully offline without an account.
+      </section>
+
+      {/* About */}
+      <section className="bg-gradient-to-b from-stone-900/80 to-stone-950/80 border border-amber-900/50 rounded-2xl p-5 shadow-lg shadow-black/20">
+        <h2 className="text-xs font-serif font-semibold text-amber-200 uppercase tracking-widest mb-3">
+          About The Tome
+        </h2>
+        <p className="text-amber-100/80 text-sm font-serif leading-relaxed mb-2">
+          The Tome is thy tabletop companion — keeper of thy library, guide through
+          games, and scribe of thy chronicles. It works fully offline and stores
+          everything on this very device.
         </p>
-        <button
-          disabled
-          className="px-4 py-2 bg-stone-700/60 border border-stone-600/40 text-stone-300 rounded-lg text-sm cursor-not-allowed"
-        >
-          Sign in (coming soon)
-        </button>
+        <p className="text-[11px] text-amber-200/50 font-serif italic">
+          v1.0 · Forged for tabletop nights and long campaigns alike.
+        </p>
       </section>
 
-      <section className="bg-stone-800/40 border border-stone-700/40 rounded-2xl p-5">
-        <div className="flex items-center gap-2 mb-3">
-          <Download className="w-5 h-5 text-amber-400" />
-          <h2 className="text-lg font-semibold text-stone-100">Export data</h2>
+      {/* Danger zone */}
+      <section className="bg-gradient-to-b from-red-950/30 to-stone-950/80 border border-red-900/50 rounded-2xl p-5 shadow-lg shadow-black/20">
+        <div className="flex items-center gap-2 mb-2">
+          <Trash2 className="w-4 h-4 text-red-400" />
+          <h2 className="text-xs font-serif font-semibold text-red-200 uppercase tracking-widest">
+            Perilous Spells
+          </h2>
         </div>
-        <p className="text-stone-400 text-sm mb-4">Download your collection and play history as JSON or CSV.</p>
-        <div className="flex flex-wrap gap-2">
-          <button
-            onClick={() => downloadJson('mr-gameboard-library.json', { games, favorites })}
-            className="px-3 py-2 bg-stone-700/60 hover:bg-stone-600/60 border border-stone-600/40 text-stone-200 rounded-lg text-sm"
-          >
-            Library (JSON)
-          </button>
-          <button
-            onClick={() => downloadCsv('mr-gameboard-library.csv', games.map(g => ({
-              id: g.id,
-              bggId: g.bggId,
-              name: g.name,
-              minPlayers: g.minPlayers,
-              maxPlayers: g.maxPlayers,
-              playingTime: g.playingTime,
-              rating: g.rating,
-              favorite: favorites.includes(g.id) ? 'yes' : 'no',
-            })))}
-            disabled={games.length === 0}
-            className="px-3 py-2 bg-stone-700/60 hover:bg-stone-600/60 border border-stone-600/40 text-stone-200 rounded-lg text-sm disabled:opacity-50"
-          >
-            Library (CSV)
-          </button>
-          <button
-            onClick={() => downloadJson('mr-gameboard-sessions.json', sessions)}
-            disabled={sessions.length === 0}
-            className="px-3 py-2 bg-stone-700/60 hover:bg-stone-600/60 border border-stone-600/40 text-stone-200 rounded-lg text-sm disabled:opacity-50"
-          >
-            Sessions (JSON)
-          </button>
-          <button
-            onClick={() => downloadCsv('mr-gameboard-sessions.csv', sessions.map(s => ({
-              gameId: s.gameId,
-              gameName: s.gameName,
-              date: s.date,
-              duration: s.duration,
-              players: (s.players || []).map((p: any) => p.name).join('|'),
-              winner: (s.players || []).find((p: any) => p.isWinner)?.name || '',
-            })))}
-            disabled={sessions.length === 0}
-            className="px-3 py-2 bg-stone-700/60 hover:bg-stone-600/60 border border-stone-600/40 text-stone-200 rounded-lg text-sm disabled:opacity-50"
-          >
-            Sessions (CSV)
-          </button>
-        </div>
-      </section>
-
-      <section className="bg-red-950/30 border border-red-900/40 rounded-2xl p-5">
-        <div className="flex items-center gap-2 mb-3">
-          <Trash2 className="w-5 h-5 text-red-400" />
-          <h2 className="text-lg font-semibold text-stone-100">Clear all data</h2>
-        </div>
-        <p className="text-stone-400 text-sm mb-4">
-          Delete all local games, favorites, and session history. This cannot be undone.
+        <p className="text-amber-100/75 text-sm font-serif mb-4 leading-relaxed">
+          Erase thy entire library, favorites, and every scribed session. This deed
+          cannot be undone — no revival spell shall bring them back.
         </p>
         {confirmClear ? (
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <button
               onClick={handleClearAll}
-              className="px-4 py-2 bg-red-700 hover:bg-red-600 text-white rounded-lg text-sm"
+              className="px-4 py-2 bg-red-700 hover:bg-red-600 text-white font-serif font-semibold rounded-lg text-sm border border-red-500/50 transition-colors"
             >
-              Yes, delete everything
+              Yes, erase everything
             </button>
             <button
               onClick={() => setConfirmClear(false)}
-              className="px-4 py-2 bg-stone-700/60 hover:bg-stone-600/60 text-stone-200 rounded-lg text-sm"
+              className="px-4 py-2 bg-stone-900 hover:bg-stone-800 border border-amber-900/50 text-amber-100 font-serif rounded-lg text-sm transition-colors"
             >
               Cancel
             </button>
@@ -155,9 +145,10 @@ export default function MePage() {
         ) : (
           <button
             onClick={() => setConfirmClear(true)}
-            className="px-4 py-2 bg-red-900/40 hover:bg-red-900/60 border border-red-800/40 text-red-200 rounded-lg text-sm"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-red-950/60 hover:bg-red-900/70 border border-red-800/60 text-red-200 font-serif rounded-lg text-sm transition-colors"
           >
-            Clear all data
+            <Trash2 className="w-4 h-4" />
+            <span>Clear all data</span>
           </button>
         )}
       </section>
@@ -165,18 +156,60 @@ export default function MePage() {
   );
 }
 
-function StatCard({ label, value, icon }: { label: string; value: number; icon: React.ReactNode }) {
+function StatCard({
+  label,
+  value,
+  icon,
+}: {
+  label: string;
+  value: number;
+  icon: React.ReactNode;
+}) {
   return (
-    <div className="bg-stone-800/40 border border-stone-700/40 rounded-2xl p-5">
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-lg bg-stone-700/40 flex items-center justify-center">
-          {icon}
-        </div>
-        <div>
-          <p className="text-stone-400 text-xs uppercase tracking-wide">{label}</p>
-          <p className="text-2xl font-bold text-stone-100">{value}</p>
-        </div>
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-gradient-to-b from-stone-900/80 to-stone-950/90 border border-amber-900/50 rounded-2xl p-4 shadow-lg shadow-black/20"
+    >
+      <div className="mb-2">{icon}</div>
+      <p className="text-2xl font-serif font-bold text-amber-100 tabular-nums">{value}</p>
+      <p className="text-[11px] text-amber-200/60 font-serif uppercase tracking-wider">{label}</p>
+    </motion.div>
+  );
+}
+
+function QuickLink({
+  href,
+  title,
+  description,
+  icon,
+}: {
+  href: string;
+  title: string;
+  description: string;
+  icon: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className="group flex items-center gap-3 p-3 bg-stone-950/50 hover:bg-stone-900/70 border border-amber-900/40 hover:border-amber-500/50 rounded-xl transition-colors"
+    >
+      <div className="shrink-0 w-10 h-10 rounded-lg bg-stone-900 border border-amber-900/40 flex items-center justify-center">
+        <Image
+          src={icon}
+          alt=""
+          width={28}
+          height={28}
+          className="w-7 h-7 object-contain drop-shadow-[0_0_4px_rgba(251,191,36,0.4)]"
+        />
       </div>
-    </div>
+      <div className="flex-1 min-w-0">
+        <p className="font-serif font-semibold text-amber-100 text-sm truncate">{title}</p>
+        <p className="text-[11px] text-amber-200/60 font-serif italic truncate">
+          {description}
+        </p>
+      </div>
+      <ChevronRight className="w-4 h-4 text-amber-700 group-hover:text-amber-400 transition-colors shrink-0" />
+    </Link>
   );
 }

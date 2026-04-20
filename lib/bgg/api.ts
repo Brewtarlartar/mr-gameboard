@@ -80,17 +80,82 @@ function getInner(xml: string, tag: string): string | undefined {
   return m ? m[1].trim() : undefined;
 }
 
+// Common HTML named entities that show up in BGG descriptions.
+// Numeric entities (&#NNN; and &#xHH;) are handled separately below.
+const NAMED_ENTITIES: Record<string, string> = {
+  amp: '&',
+  lt: '<',
+  gt: '>',
+  quot: '"',
+  apos: "'",
+  nbsp: ' ',
+  ndash: '–',
+  mdash: '—',
+  hellip: '…',
+  lsquo: '\u2018',
+  rsquo: '\u2019',
+  ldquo: '\u201C',
+  rdquo: '\u201D',
+  laquo: '«',
+  raquo: '»',
+  copy: '©',
+  reg: '®',
+  trade: '™',
+  middot: '·',
+  bull: '•',
+  deg: '°',
+  iexcl: '¡',
+  iquest: '¿',
+  szlig: 'ß',
+  Auml: 'Ä',
+  auml: 'ä',
+  Ouml: 'Ö',
+  ouml: 'ö',
+  Uuml: 'Ü',
+  uuml: 'ü',
+  Aacute: 'Á',
+  aacute: 'á',
+  Eacute: 'É',
+  eacute: 'é',
+  Iacute: 'Í',
+  iacute: 'í',
+  Oacute: 'Ó',
+  oacute: 'ó',
+  Uacute: 'Ú',
+  uacute: 'ú',
+  Ntilde: 'Ñ',
+  ntilde: 'ñ',
+};
+
 function decodeBggHtml(input: string): string {
-  return input
-    .replace(/&#10;/g, '\n')
-    .replace(/<br\s*\/?>/gi, '\n')
-    .replace(/<[^>]*>/g, '')
-    .replace(/&quot;/g, '"')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&#39;/g, "'")
-    .trim();
+  return (
+    input
+      // Convert BGG-style line breaks first so the resulting newlines survive
+      // the tag-stripping pass below.
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<\/p>/gi, '\n\n')
+      .replace(/<[^>]*>/g, '')
+      // Numeric character references: hex (&#xNN;) and decimal (&#NNN;).
+      .replace(/&#x([0-9a-f]+);/gi, (_, hex) => {
+        const code = parseInt(hex, 16);
+        return Number.isFinite(code) ? String.fromCodePoint(code) : '';
+      })
+      .replace(/&#(\d+);/g, (_, dec) => {
+        const code = parseInt(dec, 10);
+        return Number.isFinite(code) ? String.fromCodePoint(code) : '';
+      })
+      // Named entities (after numeric so we don't double-decode).
+      .replace(/&([a-zA-Z][a-zA-Z0-9]+);/g, (match, name) => {
+        return Object.prototype.hasOwnProperty.call(NAMED_ENTITIES, name)
+          ? NAMED_ENTITIES[name]
+          : match;
+      })
+      // Collapse runs of 3+ newlines down to a paragraph break, and trim
+      // trailing whitespace on each line.
+      .replace(/[ \t]+\n/g, '\n')
+      .replace(/\n{3,}/g, '\n\n')
+      .trim()
+  );
 }
 
 function collectLinks(xml: string, type: string): string[] {

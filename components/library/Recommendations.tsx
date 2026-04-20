@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { Sparkles, Loader2, Plus, RefreshCw, Star, Users, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Loader2, Plus, RefreshCw, Star, Users, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useGameStore } from '@/lib/store/gameStore';
 import { Game } from '@/types/game';
 
@@ -149,16 +149,13 @@ export default function Recommendations({ onGameSelect }: RecommendationsProps) 
   return (
     <section className="space-y-3">
       <div className="flex items-center justify-between gap-2 px-1 sm:px-2">
-        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-          <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-amber-400 shrink-0" />
-          <div className="min-w-0">
-            <h3 className="text-lg sm:text-2xl font-serif font-bold text-amber-100 leading-tight truncate">
-              Recommended For You
-            </h3>
-            <p className="text-[11px] sm:text-xs text-amber-200/60 italic font-serif leading-tight truncate">
-              {subtitle}
-            </p>
-          </div>
+        <div className="min-w-0">
+          <h3 className="text-lg sm:text-2xl font-serif font-bold text-amber-100 leading-tight truncate">
+            Recommended For You
+          </h3>
+          <p className="text-[11px] sm:text-xs text-amber-200/60 italic font-serif leading-tight truncate">
+            {subtitle}
+          </p>
         </div>
         <button
           onClick={fetchRecommendations}

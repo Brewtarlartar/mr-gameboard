@@ -33,7 +33,7 @@ export function generateCategories(
   if (favoriteGames.length > 0) {
     categories.push({
       id: 'favorites',
-      title: '❤️ My Favorites',
+      title: 'My Favorites',
       description: 'Your most loved games',
       games: favoriteGames,
       priority: 100,
@@ -47,7 +47,7 @@ export function generateCategories(
     if (trendingGames.length > 0) {
       categories.push({
         id: 'trending',
-        title: '🔥 Trending Now',
+        title: 'Trending Now',
         description: 'Hot games on BoardGameGeek',
         games: trendingGames,
         priority: 95,
@@ -62,7 +62,7 @@ export function generateCategories(
     if (newGames.length > 0) {
       categories.push({
         id: 'new-releases',
-        title: '✨ New Releases',
+        title: 'New Releases',
         description: 'Recently published games in your collection',
         games: newGames,
         priority: 90,
@@ -75,7 +75,7 @@ export function generateCategories(
   if (recentlyAdded.length > 0) {
     categories.push({
       id: 'recent',
-      title: '📥 Recently Added',
+      title: 'Recently Added',
       description: 'Your latest additions',
       games: recentlyAdded,
       priority: 85,
@@ -87,7 +87,7 @@ export function generateCategories(
   if (quickGames.length > 0) {
     categories.push({
       id: 'quick',
-      title: '⚡ Quick Games for Tonight',
+      title: 'Quick Games for Tonight',
       description: 'Under 30 minutes',
       games: quickGames,
       priority: 80,
@@ -99,7 +99,7 @@ export function generateCategories(
   if (shortGames.length > 0) {
     categories.push({
       id: 'short',
-      title: '⏱️ Short Sessions',
+      title: 'Short Sessions',
       description: '30-60 minutes',
       games: shortGames,
       priority: 75,
@@ -114,7 +114,7 @@ export function generateCategories(
   if (twoPlayerGames.length > 0) {
     categories.push({
       id: 'two-player',
-      title: '👥 Perfect for 2 Players',
+      title: 'Perfect for 2 Players',
       description: 'Great dueling games',
       games: twoPlayerGames,
       priority: 70,
@@ -126,7 +126,7 @@ export function generateCategories(
   if (partyGames.length > 0) {
     categories.push({
       id: 'party',
-      title: '🎉 Party Games',
+      title: 'Party Games',
       description: '6+ players',
       games: partyGames,
       priority: 65,
@@ -143,7 +143,7 @@ export function generateCategories(
   if (strategyGames.length > 0) {
     categories.push({
       id: 'strategy',
-      title: '🎯 Strategy Games',
+      title: 'Strategy Games',
       description: 'Tactical depth and complex decisions',
       games: strategyGames,
       priority: 60,
@@ -155,7 +155,7 @@ export function generateCategories(
   if (heavyGames.length > 0) {
     categories.push({
       id: 'heavy',
-      title: '🧠 Heavy Games',
+      title: 'Heavy Games',
       description: 'Brain-burners for experienced players',
       games: heavyGames,
       priority: 55,
@@ -167,7 +167,7 @@ export function generateCategories(
   if (epicGames.length > 0) {
     categories.push({
       id: 'epic',
-      title: '🏔️ Epic Adventures',
+      title: 'Epic Adventures',
       description: '3+ hours of gameplay',
       games: epicGames,
       priority: 50,
@@ -179,7 +179,7 @@ export function generateCategories(
   if (lightGames.length > 0) {
     categories.push({
       id: 'light',
-      title: '🌟 Light & Accessible',
+      title: 'Light & Accessible',
       description: 'Easy to learn, fun to play',
       games: lightGames,
       priority: 45,
@@ -189,7 +189,7 @@ export function generateCategories(
   // 13. Full Collection (always last)
   categories.push({
     id: 'all',
-    title: '📚 Full Collection',
+    title: 'Full Collection',
     description: `All ${games.length} games`,
     games: games,
     priority: 0,

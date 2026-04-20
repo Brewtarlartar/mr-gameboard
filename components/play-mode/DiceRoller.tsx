@@ -530,19 +530,21 @@ export default function DiceRoller() {
   const total = dice.reduce((sum, d) => sum + d.value, 0);
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       {/* Dice Type Selector */}
       <div>
-        <div className="text-sm text-gray-500 mb-3 font-ui">Add Dice:</div>
-        <div className="flex flex-wrap gap-2">
+        <div className="text-[10px] text-amber-200/60 mb-2 font-serif uppercase tracking-wider">
+          Add Dice
+        </div>
+        <div className="flex flex-wrap gap-1.5">
           {DICE_TYPES.map((type) => (
             <button
               key={type}
               onClick={() => addDice(type)}
-              className="p-2 bg-gray-50 hover:bg-purple-50 border border-gray-200 hover:border-purple-300 rounded-lg text-gray-900 hover:text-purple-600 transition-all hover:scale-110 active:scale-95"
+              className="p-1.5 bg-stone-900/60 hover:bg-stone-900/80 border border-amber-900/40 hover:border-amber-700/60 rounded-lg transition-colors active:scale-95"
               title={`Add d${type}`}
             >
-              <DiceShape type={type} size={44} />
+              <DiceShape type={type} size={40} />
             </button>
           ))}
         </div>
@@ -556,20 +558,24 @@ export default function DiceRoller() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
           >
-            <div className="flex items-center justify-between mb-3">
-              <div className="text-sm text-gray-500 font-ui">Active Dice:</div>
+            <div className="flex items-center justify-between mb-3 gap-2">
+              <div className="text-[10px] text-amber-200/60 font-serif uppercase tracking-wider">
+                Active Dice
+              </div>
               <div className="flex gap-2">
                 <button
                   onClick={rollAll}
                   disabled={isRolling}
-                  className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-400 hover:to-purple-500 text-white rounded-lg text-sm font-ui font-semibold transition-all hover:scale-105 active:scale-95 disabled:opacity-50 shadow-lg shadow-purple-200"
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-b from-amber-500 to-amber-700 hover:from-amber-400 hover:to-amber-600 border border-amber-400/40 text-stone-950 rounded-md text-xs font-serif font-semibold shadow-md shadow-amber-900/30 transition-colors disabled:opacity-50"
                 >
-                  <Shuffle className={`w-4 h-4 ${isRolling ? 'animate-spin' : ''}`} />
+                  <Shuffle
+                    className={`w-3.5 h-3.5 ${isRolling ? 'animate-spin' : ''}`}
+                  />
                   Roll All
                 </button>
                 <button
                   onClick={clearAll}
-                  className="px-4 py-2 bg-gray-100 hover:bg-red-50 border border-gray-200 hover:border-red-200 text-gray-700 hover:text-red-500 rounded-lg text-sm font-ui font-medium transition-all"
+                  className="px-3 py-1.5 bg-stone-800/70 hover:bg-stone-700/70 border border-amber-900/40 text-amber-100 hover:text-red-300 rounded-md text-xs font-serif transition-colors"
                 >
                   Clear
                 </button>
@@ -605,8 +611,8 @@ export default function DiceRoller() {
               ))}
             </div>
             {dice.length > 1 && (
-              <div className="text-xl font-bold text-purple-600 font-display flex items-center gap-2">
-                <Sparkles className="w-5 h-5" />
+              <div className="text-lg font-serif font-bold text-amber-300 flex items-center gap-2">
+                <Sparkles className="w-4 h-4" />
                 Total: {total}
               </div>
             )}
@@ -617,24 +623,30 @@ export default function DiceRoller() {
       {/* Roll History */}
       {rollHistory.length > 0 && (
         <div>
-          <div className="text-sm text-gray-500 mb-2 font-ui">Recent Rolls:</div>
-          <div className="space-y-2 max-h-32 overflow-y-auto scrollbar-hide">
+          <div className="text-[10px] text-amber-200/60 mb-2 font-serif uppercase tracking-wider">
+            Recent Rolls
+          </div>
+          <div className="space-y-1.5 max-h-32 overflow-y-auto scrollbar-hide">
             {rollHistory.map((rollSet, index) => (
               <div
                 key={index}
-                className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg text-sm border border-gray-100"
+                className="flex items-center gap-2 p-2 bg-stone-900/60 border border-amber-900/30 rounded-md text-xs font-serif"
               >
                 <div className="flex gap-1 flex-wrap">
                   {rollSet.map((die, i) => (
-                    <span key={i} className="text-gray-700 font-ui">
-                      <span className="text-gray-500">d{die.type}:</span>
-                      <span className="text-purple-600 font-semibold">{die.value}</span>
-                      {i < rollSet.length - 1 && <span className="text-gray-400">,</span>}
+                    <span key={i} className="text-amber-100/90">
+                      <span className="text-amber-200/50">d{die.type}:</span>
+                      <span className="text-amber-300 font-semibold ml-0.5">
+                        {die.value}
+                      </span>
+                      {i < rollSet.length - 1 && (
+                        <span className="text-stone-500">,</span>
+                      )}
                     </span>
                   ))}
                 </div>
                 {rollSet.length > 1 && (
-                  <span className="text-teal-500 ml-auto font-semibold font-ui">
+                  <span className="text-emerald-400 ml-auto font-semibold tabular-nums">
                     = {rollSet.reduce((sum, d) => sum + d.value, 0)}
                   </span>
                 )}
@@ -645,9 +657,9 @@ export default function DiceRoller() {
       )}
 
       {dice.length === 0 && (
-        <div className="text-center py-8 text-gray-500">
-          <Dice1 className="w-14 h-14 mx-auto mb-3 opacity-40" />
-          <p className="font-ui text-lg">Add dice to get started</p>
+        <div className="text-center py-8 text-amber-200/60">
+          <Dice1 className="w-12 h-12 mx-auto mb-3 opacity-40" />
+          <p className="font-serif italic text-sm">Add dice to begin</p>
         </div>
       )}
     </div>

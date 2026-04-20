@@ -22,7 +22,7 @@ export default function MainLayout({
   const navItems = [
     { href: '/', label: 'Home', icon: Home },
     { href: '/library', label: 'Library', icon: Library },
-    { href: '/discover', label: 'Discover', icon: Compass },
+    { href: '/discover', label: 'Catalog', icon: Compass },
     { href: '/play', label: 'Play', icon: Play },
     { href: '/analytics', label: 'Stats', icon: BarChart3 },
     { href: '/me', label: 'Me', icon: User },
@@ -30,7 +30,7 @@ export default function MainLayout({
 
   return (
     <div className="min-h-screen flex flex-col">
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-stone-900/75 backdrop-blur-lg border-b border-amber-900/40 shadow-lg">
+      <nav className="hidden md:block fixed top-0 left-0 right-0 z-50 bg-stone-900/75 backdrop-blur-lg border-b border-amber-900/40 shadow-lg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-14">
             <Link href="/" className="flex items-center gap-2">
@@ -108,7 +108,7 @@ export default function MainLayout({
         id="main-scroll"
         className={cn(
           'fixed left-0 right-0 bottom-0 z-10 overflow-x-hidden overflow-y-auto overscroll-y-contain tome-page-scroll',
-          isMobile ? 'top-14 pb-24' : 'top-14'
+          isMobile ? 'top-0 pb-24' : 'top-14'
         )}
       >
         <main className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">

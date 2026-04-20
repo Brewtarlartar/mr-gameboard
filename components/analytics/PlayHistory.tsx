@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Calendar, Clock, Trophy, Users, TrendingUp, Star, Trash2, Edit } from 'lucide-react';
+import { Calendar, Clock, Trophy, Users, Star, Trash2 } from 'lucide-react';
 import { usePlayHistoryStore } from '@/lib/store/playHistoryStore';
 import { format } from 'date-fns';
 
@@ -16,11 +16,13 @@ export default function PlayHistory() {
 
   if (sessions.length === 0) {
     return (
-      <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-12 text-center">
-        <Calendar className="w-16 h-16 text-purple-400 mx-auto mb-4 opacity-50" />
-        <h3 className="text-2xl font-bold text-gray-900 mb-2">No Play Sessions Yet</h3>
-        <p className="text-gray-500">
-          Start logging your game sessions to track your gaming journey!
+      <div className="bg-gradient-to-b from-stone-900/70 to-stone-950/80 border border-amber-900/50 rounded-2xl p-10 sm:p-12 text-center shadow-lg shadow-black/30">
+        <div className="text-5xl mb-4">📜</div>
+        <h3 className="text-2xl font-serif font-bold text-amber-100 mb-2">
+          No tales to tell yet
+        </h3>
+        <p className="text-amber-200/70 text-sm font-serif italic max-w-md mx-auto">
+          Scribe thy first session with the button above to begin thy chronicle.
         </p>
       </div>
     );
@@ -29,89 +31,105 @@ export default function PlayHistory() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-black text-purple-600">Play History</h2>
-        <span className="px-3 py-1 bg-purple-50 text-purple-600 text-sm font-semibold rounded-full">{sessions.length} Sessions</span>
+        <p className="text-amber-200/70 text-sm font-serif italic">
+          {sessions.length} {sessions.length === 1 ? 'tale scribed' : 'tales scribed'}
+        </p>
+        <span className="px-3 py-1 bg-amber-500/10 text-amber-200 text-xs font-serif font-semibold rounded-full border border-amber-500/40">
+          {sessions.length} {sessions.length === 1 ? 'Session' : 'Sessions'}
+        </span>
       </div>
 
       <div className="space-y-3">
-        {sortedSessions.map((session, index) => (
-          <motion.div
-            key={session.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.05 }}
-            className="bg-white border border-gray-200 rounded-2xl shadow-sm p-4 hover:bg-gray-50 transition-all cursor-pointer"
-            onClick={() => setSelectedSession(session.id === selectedSession ? null : session.id)}
-          >
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex-1 min-w-0">
-                <h3 className="text-lg font-bold text-gray-900 mb-2">{session.gameName}</h3>
+        {sortedSessions.map((session, index) => {
+          const isExpanded = selectedSession === session.id;
+          return (
+            <motion.div
+              key={session.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: Math.min(index * 0.03, 0.3) }}
+              className="bg-gradient-to-b from-stone-900/80 to-stone-950/80 border border-amber-900/50 hover:border-amber-500/50 rounded-2xl p-4 shadow-lg shadow-black/20 transition-colors cursor-pointer"
+              onClick={() => setSelectedSession(isExpanded ? null : session.id)}
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-lg font-serif font-bold text-amber-100 mb-2 truncate">
+                    {session.gameName}
+                  </h3>
 
-                <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 mb-3">
-                  <div className="flex items-center gap-1">
-                    <Calendar className="w-4 h-4" />
-                    <span>{format(new Date(session.date), 'MMM d, yyyy')}</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Clock className="w-4 h-4" />
-                    <span>{session.duration} min</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Users className="w-4 h-4" />
-                    <span>{session.players.length} players</span>
-                  </div>
-                  {session.rating && (
-                    <div className="flex items-center gap-1">
-                      <Star className="w-4 h-4 text-amber-500 fill-amber-500" />
-                      <span>{session.rating}/5</span>
+                  <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs text-amber-200/70 mb-3 font-serif">
+                    <div className="flex items-center gap-1.5">
+                      <Calendar className="w-3.5 h-3.5 text-amber-400/80" />
+                      <span>{format(new Date(session.date), 'MMM d, yyyy')}</span>
                     </div>
+                    <div className="flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5 text-amber-400/80" />
+                      <span>{session.duration} min</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <Users className="w-3.5 h-3.5 text-amber-400/80" />
+                      <span>
+                        {session.players.length}{' '}
+                        {session.players.length === 1 ? 'player' : 'players'}
+                      </span>
+                    </div>
+                    {session.rating && (
+                      <div className="flex items-center gap-1">
+                        <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+                        <span>{session.rating}/5</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex flex-wrap gap-1.5">
+                    {session.players.map((player, idx) => (
+                      <div
+                        key={idx}
+                        className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-serif font-semibold border ${
+                          player.isWinner
+                            ? 'bg-amber-500/15 border-amber-500/50 text-amber-200'
+                            : 'bg-stone-950/70 border-amber-900/40 text-amber-100/80'
+                        }`}
+                      >
+                        {player.isWinner && <Trophy className="w-3 h-3" />}
+                        <span className="capitalize">{player.name}</span>
+                        {player.score !== undefined && (
+                          <span className="text-amber-200/60">({player.score})</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+
+                  {isExpanded && session.notes && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      className="mt-3 pt-3 border-t border-amber-900/40"
+                    >
+                      <p className="text-sm text-amber-100/80 italic font-serif leading-relaxed">
+                        &ldquo;{session.notes}&rdquo;
+                      </p>
+                    </motion.div>
                   )}
                 </div>
 
-                {/* Players */}
-                <div className="flex flex-wrap gap-2">
-                  {session.players.map((player, idx) => (
-                    <div
-                      key={idx}
-                      className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                        player.isWinner
-                          ? 'bg-amber-50 border border-amber-200 text-amber-600'
-                          : 'bg-gray-100 text-gray-700'
-                      }`}
-                    >
-                      {player.isWinner && <Trophy className="w-3 h-3 inline mr-1" />}
-                      {player.name}
-                      {player.score !== undefined && ` (${player.score})`}
-                    </div>
-                  ))}
-                </div>
-
-                {/* Expanded Details */}
-                {selectedSession === session.id && session.notes && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    className="mt-3 pt-3 border-t border-gray-200"
-                  >
-                    <p className="text-sm text-gray-700 italic">{session.notes}</p>
-                  </motion.div>
-                )}
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (typeof window !== 'undefined' && window.confirm('Erase this tale from the chronicle?')) {
+                      deleteSession(session.id);
+                    }
+                  }}
+                  className="p-2 bg-red-950/60 hover:bg-red-900/70 border border-red-800/60 rounded-lg transition-colors shrink-0"
+                  aria-label="Delete session"
+                  title="Delete session"
+                >
+                  <Trash2 className="w-4 h-4 text-red-200" />
+                </button>
               </div>
-
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (confirm('Delete this session?')) {
-                    deleteSession(session.id);
-                  }
-                }}
-                className="p-2 hover:bg-red-50 rounded-lg transition-colors"
-              >
-                <Trash2 className="w-4 h-4 text-red-500" />
-              </button>
-            </div>
-          </motion.div>
-        ))}
+            </motion.div>
+          );
+        })}
       </div>
     </div>
   );

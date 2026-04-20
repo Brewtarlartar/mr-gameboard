@@ -37,10 +37,14 @@ export default function GameCard({
 
   const handleRemove = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (onRemove) {
-      setIsRemoving(true);
-      onRemove(game.id);
+    e.preventDefault();
+    if (!onRemove) return;
+    if (typeof window !== 'undefined') {
+      const ok = window.confirm(`Remove "${game.name}" from thy library?`);
+      if (!ok) return;
     }
+    setIsRemoving(true);
+    onRemove(game.id);
   };
 
   return (
@@ -104,8 +108,10 @@ export default function GameCard({
           {isOwned && onRemove && (
             <button
               onClick={handleRemove}
-              className="p-2 bg-red-950/80 hover:bg-red-800 border border-red-800/60 rounded-full transition-colors opacity-0 group-hover:opacity-100"
+              onPointerDown={(e) => e.stopPropagation()}
+              className="p-2 bg-red-950/80 hover:bg-red-800 border border-red-800/60 rounded-full transition-colors shadow-md"
               title="Remove from library"
+              aria-label={`Remove ${game.name} from library`}
             >
               <Trash2 className="w-4 h-4 text-red-200" />
             </button>
@@ -116,8 +122,10 @@ export default function GameCard({
               e.stopPropagation();
               onToggleFavorite(game.id);
             }}
-            className="p-2 bg-stone-950/80 hover:bg-stone-800 border border-amber-900/40 rounded-full transition-colors"
+            onPointerDown={(e) => e.stopPropagation()}
+            className="p-2 bg-stone-950/80 hover:bg-stone-800 border border-amber-900/40 rounded-full transition-colors shadow-md"
             title={isFavorite ? 'Unfavorite' : 'Favorite'}
+            aria-label={isFavorite ? 'Unfavorite' : 'Favorite'}
           >
             <Heart
               className={`w-4 h-4 ${

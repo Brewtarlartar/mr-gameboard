@@ -5,7 +5,7 @@ import { Play, Pause, RotateCcw, Clock, AlertTriangle } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export default function TurnTimer() {
-  const [seconds, setSeconds] = useState(300); // Default 5 minutes
+  const [seconds, setSeconds] = useState(300);
   const [isRunning, setIsRunning] = useState(false);
   const [initialTime, setInitialTime] = useState(300);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -21,23 +21,21 @@ export default function TurnTimer() {
           return prev - 1;
         });
       }, 1000);
-    } else {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
+    } else if (intervalRef.current) {
+      clearInterval(intervalRef.current);
     }
 
     return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
+      if (intervalRef.current) clearInterval(intervalRef.current);
     };
   }, [isRunning]);
 
   const formatTime = (totalSeconds: number) => {
     const mins = Math.floor(totalSeconds / 60);
     const secs = totalSeconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    return `${mins.toString().padStart(2, '0')}:${secs
+      .toString()
+      .padStart(2, '0')}`;
   };
 
   const reset = () => {
@@ -57,24 +55,29 @@ export default function TurnTimer() {
   const progress = initialTime > 0 ? (seconds / initialTime) * 100 : 0;
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       {/* Time Presets */}
       <div>
-        <div className="text-sm text-gray-500 mb-3 font-ui">Quick Set:</div>
-        <div className="flex flex-wrap gap-2">
-          {[1, 2, 3, 5, 10, 15].map((mins) => (
-            <button
-              key={mins}
-              onClick={() => setTime(mins)}
-              className={`px-3 py-1.5 border rounded-lg text-sm font-ui font-medium transition-all hover:scale-105 active:scale-95 ${
-                initialTime === mins * 60
-                  ? 'bg-purple-50 border-purple-500 text-purple-600'
-                  : 'bg-gray-100 border-gray-200 text-gray-700 hover:border-purple-300 hover:text-gray-900'
-              }`}
-            >
-              {mins}m
-            </button>
-          ))}
+        <div className="text-[10px] text-amber-200/60 mb-2 font-serif uppercase tracking-wider">
+          Quick Set
+        </div>
+        <div className="flex flex-wrap gap-1.5">
+          {[1, 2, 3, 5, 10, 15].map((mins) => {
+            const active = initialTime === mins * 60;
+            return (
+              <button
+                key={mins}
+                onClick={() => setTime(mins)}
+                className={`px-2.5 py-1 border rounded-md text-xs font-serif font-semibold transition-colors ${
+                  active
+                    ? 'bg-amber-500/20 border-amber-500/60 text-amber-200'
+                    : 'bg-stone-900/60 border-amber-900/40 text-amber-100/80 hover:border-amber-700/60 hover:text-amber-200'
+                }`}
+              >
+                {mins}m
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -82,83 +85,93 @@ export default function TurnTimer() {
       <motion.div
         animate={isTimeUp ? { scale: [1, 1.02, 1] } : {}}
         transition={{ repeat: Infinity, duration: 0.5 }}
-        className={`relative p-8 rounded-2xl border-4 text-center transition-all overflow-hidden ${
+        className={`relative p-6 rounded-2xl border-2 text-center transition-colors overflow-hidden ${
           isTimeUp
-            ? 'bg-red-50 border-red-400 shadow-lg shadow-red-100'
+            ? 'bg-red-950/40 border-red-500/60'
             : isWarning
-            ? 'bg-amber-50 border-amber-400 shadow-lg shadow-amber-100'
-            : 'bg-white border-purple-200 shadow-lg shadow-purple-100'
+            ? 'bg-amber-900/30 border-amber-500/60'
+            : 'bg-stone-950/70 border-amber-900/50'
         }`}
       >
-        {/* Progress bar background */}
-        <div 
+        {/* Progress bar */}
+        <div
           className="absolute bottom-0 left-0 h-1 transition-all duration-1000 ease-linear"
-          style={{ 
+          style={{
             width: `${progress}%`,
-            background: isTimeUp 
-              ? '#ef4444' 
-              : isWarning 
-              ? '#eab308' 
-              : 'linear-gradient(90deg, #8b5cf6, #7c3aed)'
+            background: isTimeUp
+              ? '#ef4444'
+              : isWarning
+              ? '#f59e0b'
+              : 'linear-gradient(90deg, #b45309, #f59e0b)',
           }}
         />
-        
-        <Clock className={`w-8 h-8 mx-auto mb-3 ${
-          isTimeUp ? 'text-red-500' : isWarning ? 'text-amber-500' : 'text-purple-500'
-        }`} />
+
+        <Clock
+          className={`w-7 h-7 mx-auto mb-2 ${
+            isTimeUp
+              ? 'text-red-400'
+              : isWarning
+              ? 'text-amber-300'
+              : 'text-amber-400'
+          }`}
+        />
         <div
-          className={`text-6xl font-black font-display tracking-tight ${
-            isTimeUp ? 'text-red-500' : isWarning ? 'text-amber-500' : 'text-gray-900'
+          className={`text-5xl font-serif font-bold tracking-tight tabular-nums ${
+            isTimeUp
+              ? 'text-red-300'
+              : isWarning
+              ? 'text-amber-200'
+              : 'text-amber-100'
           }`}
         >
           {formatTime(seconds)}
         </div>
         {isTimeUp && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mt-3 flex items-center justify-center gap-2 text-red-500 font-semibold font-ui"
+            className="mt-2 flex items-center justify-center gap-2 text-red-400 font-serif font-semibold text-sm"
           >
-            <AlertTriangle className="w-5 h-5" />
+            <AlertTriangle className="w-4 h-4" />
             Time&apos;s Up!
           </motion.div>
         )}
       </motion.div>
 
       {/* Controls */}
-      <div className="flex items-center justify-center gap-3">
+      <div className="flex items-center justify-center gap-2.5">
         <button
           onClick={() => setIsRunning(!isRunning)}
-          className={`px-6 py-3 rounded-xl transition-all flex items-center gap-2 font-ui font-semibold hover:scale-105 active:scale-95 shadow-lg ${
+          className={`px-5 py-2.5 rounded-lg flex items-center gap-2 font-serif font-semibold text-sm transition-colors border shadow-md ${
             isRunning
-              ? 'bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-white shadow-amber-200'
-              : 'bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-400 hover:to-purple-500 text-white shadow-purple-200'
+              ? 'bg-gradient-to-b from-red-500 to-red-700 hover:from-red-400 hover:to-red-600 border-red-400/40 text-stone-50 shadow-red-900/30'
+              : 'bg-gradient-to-b from-amber-500 to-amber-700 hover:from-amber-400 hover:to-amber-600 border-amber-400/40 text-stone-950 shadow-amber-900/30'
           }`}
         >
           {isRunning ? (
             <>
-              <Pause className="w-5 h-5" />
+              <Pause className="w-4 h-4" />
               Pause
             </>
           ) : (
             <>
-              <Play className="w-5 h-5" />
+              <Play className="w-4 h-4" />
               Start
             </>
           )}
         </button>
         <button
           onClick={reset}
-          className="px-6 py-3 bg-gray-100 hover:bg-purple-50 border border-gray-200 hover:border-purple-300 text-gray-700 hover:text-purple-600 rounded-xl transition-all flex items-center gap-2 font-ui font-medium hover:scale-105 active:scale-95"
+          className="px-5 py-2.5 bg-stone-800/70 hover:bg-stone-700/70 border border-amber-900/40 text-amber-100 rounded-lg flex items-center gap-2 font-serif text-sm transition-colors"
         >
-          <RotateCcw className="w-5 h-5" />
+          <RotateCcw className="w-4 h-4" />
           Reset
         </button>
       </div>
 
       {/* Custom Time Input */}
-      <div className="flex items-center justify-center gap-3">
-        <span className="text-gray-500 font-ui text-sm">Custom:</span>
+      <div className="flex items-center justify-center gap-2 text-sm">
+        <span className="text-amber-200/60 font-serif">Custom:</span>
         <input
           type="number"
           min="1"
@@ -168,9 +181,9 @@ export default function TurnTimer() {
             const mins = parseInt(e.target.value) || 1;
             setTime(Math.min(60, Math.max(1, mins)));
           }}
-          className="w-20 px-3 py-2 bg-white border border-gray-200 rounded-lg text-gray-900 text-center text-lg font-ui font-semibold focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-purple-400 transition-all [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+          className="w-16 px-2.5 py-1.5 bg-stone-950/70 border border-amber-900/50 rounded-md text-amber-100 text-center font-serif font-semibold focus:outline-none focus:ring-2 focus:ring-amber-500/40 focus:border-amber-500/50 transition-colors [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
         />
-        <span className="text-gray-700 font-ui">minutes</span>
+        <span className="text-amber-200/80 font-serif">minutes</span>
       </div>
     </div>
   );

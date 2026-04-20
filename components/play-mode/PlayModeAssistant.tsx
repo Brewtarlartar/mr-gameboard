@@ -2,7 +2,17 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Sparkles, ChevronRight, ChevronLeft, CheckCircle, MessageSquare, Clock, Users, Flag, Flame } from 'lucide-react';
+import {
+  Sparkles,
+  ChevronRight,
+  ChevronLeft,
+  CheckCircle,
+  MessageSquare,
+  Clock,
+  Users,
+  Flag,
+  Flame,
+} from 'lucide-react';
 import { Game } from '@/types/game';
 import { useHapticFeedback } from '@/lib/hooks/useMobile';
 
@@ -12,7 +22,11 @@ interface PlayModeAssistantProps {
   onComplete?: () => void;
 }
 
-export default function PlayModeAssistant({ game, players, onComplete }: PlayModeAssistantProps) {
+export default function PlayModeAssistant({
+  game,
+  players,
+  onComplete,
+}: PlayModeAssistantProps) {
   const [currentPhase, setCurrentPhase] = useState(0);
   const [showAiAssistant, setShowAiAssistant] = useState(false);
   const haptic = useHapticFeedback();
@@ -38,24 +52,26 @@ export default function PlayModeAssistant({ game, players, onComplete }: PlayMod
   const progress = ((currentPhase + 1) / phases.length) * 100;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Progress Header */}
-      <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-5">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-xl font-bold font-display text-gray-900">{game.name}</h3>
-          <span className="text-sm text-gray-500 font-ui">
+      <div className="bg-gradient-to-b from-stone-900/80 to-stone-950/80 border border-amber-900/50 rounded-2xl p-5 shadow-lg shadow-black/30">
+        <div className="flex items-center justify-between mb-3 gap-4">
+          <h3 className="text-xl font-serif font-bold text-amber-100 truncate">
+            {game.name}
+          </h3>
+          <span className="text-xs text-amber-200/70 font-serif italic flex-shrink-0">
             Phase {currentPhase + 1} of {phases.length}
           </span>
         </div>
-        <div className="relative h-2 bg-gray-100 rounded-full overflow-hidden">
+        <div className="relative h-1.5 bg-stone-950/80 border border-amber-900/40 rounded-full overflow-hidden">
           <motion.div
-            className="absolute h-full bg-gradient-to-r from-violet-500 to-purple-600"
+            className="absolute inset-y-0 left-0 bg-gradient-to-r from-amber-600 to-amber-400"
             initial={{ width: 0 }}
             animate={{ width: `${progress}%` }}
             transition={{ duration: 0.5 }}
           />
         </div>
-        <div className="flex justify-between mt-3">
+        <div className="flex justify-between mt-3 gap-2">
           {phases.map((phase, index) => (
             <button
               key={index}
@@ -63,10 +79,10 @@ export default function PlayModeAssistant({ game, players, onComplete }: PlayMod
                 haptic.light();
                 setCurrentPhase(index);
               }}
-              className={`text-xs font-ui font-medium transition-all ${
-                index <= currentPhase 
-                  ? 'text-purple-600' 
-                  : 'text-gray-400 hover:text-gray-600'
+              className={`text-[11px] font-serif transition-colors ${
+                index <= currentPhase
+                  ? 'text-amber-300'
+                  : 'text-amber-200/40 hover:text-amber-200/70'
               }`}
             >
               {phase.shortName}
@@ -81,47 +97,55 @@ export default function PlayModeAssistant({ game, players, onComplete }: PlayMod
         initial={{ opacity: 0, x: 50 }}
         animate={{ opacity: 1, x: 0 }}
         exit={{ opacity: 0, x: -50 }}
-        className="bg-white border border-gray-200 rounded-2xl shadow-sm p-6"
+        className="bg-gradient-to-b from-stone-900/80 to-stone-950/80 border border-amber-900/50 rounded-2xl p-5 sm:p-6 shadow-lg shadow-black/30"
       >
         <div className="flex items-start gap-4 mb-5">
-          <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-purple-200">
+          <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-amber-700 border border-amber-400/40 flex items-center justify-center flex-shrink-0 shadow-md shadow-amber-900/40">
             {phases[currentPhase].icon}
           </div>
-          <div>
-            <h3 className="text-2xl font-bold font-display text-gray-900 mb-1">
+          <div className="min-w-0">
+            <h3 className="text-xl sm:text-2xl font-serif font-bold text-amber-100 leading-tight">
               {phases[currentPhase].title}
             </h3>
-            <p className="text-gray-500 text-sm font-ui">{phases[currentPhase].subtitle}</p>
+            <p className="text-amber-200/70 text-sm font-serif italic mt-0.5">
+              {phases[currentPhase].subtitle}
+            </p>
           </div>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-3">
           {phases[currentPhase].instructions.map((instruction, index) => (
-            <motion.div 
-              key={index} 
+            <motion.div
+              key={index}
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: index * 0.1 }}
               className="flex items-start gap-3"
             >
-              <CheckCircle className="w-5 h-5 text-purple-500 flex-shrink-0 mt-0.5" />
-              <p className="text-gray-900 font-body">{instruction}</p>
+              <CheckCircle className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
+              <p className="text-amber-100/90 font-serif leading-relaxed">
+                {instruction}
+              </p>
             </motion.div>
           ))}
         </div>
 
         {phases[currentPhase].tip && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="mt-6 p-4 bg-purple-50 border border-purple-200 rounded-xl"
+            className="mt-6 p-4 bg-amber-500/10 border border-amber-500/30 rounded-xl"
           >
             <div className="flex items-start gap-3">
-              <Sparkles className="w-5 h-5 text-purple-500 flex-shrink-0 mt-0.5" />
+              <Sparkles className="w-5 h-5 text-amber-300 flex-shrink-0 mt-0.5" />
               <div>
-                <div className="font-semibold text-purple-600 text-sm mb-1 font-ui">Pro Tip</div>
-                <p className="text-sm text-gray-700 font-body italic">{phases[currentPhase].tip}</p>
+                <div className="font-serif font-semibold text-amber-200 text-xs uppercase tracking-wider mb-1">
+                  Sage&apos;s Counsel
+                </div>
+                <p className="text-sm text-amber-100/90 font-serif italic leading-relaxed">
+                  {phases[currentPhase].tip}
+                </p>
               </div>
             </div>
           </motion.div>
@@ -134,11 +158,11 @@ export default function PlayModeAssistant({ game, players, onComplete }: PlayMod
           haptic.medium();
           setShowAiAssistant(!showAiAssistant);
         }}
-        className="w-full flex items-center justify-center gap-2 px-6 py-4 bg-purple-50 hover:bg-purple-100 border border-purple-200 hover:border-purple-300 rounded-xl transition-all active:scale-95"
+        className="w-full flex items-center justify-center gap-2 px-5 py-3 bg-stone-900/60 hover:bg-stone-900/80 border border-amber-900/40 hover:border-amber-700/60 rounded-xl transition-colors"
       >
-        <MessageSquare className="w-5 h-5 text-purple-600" />
-        <span className="font-semibold font-ui text-purple-600">
-          {showAiAssistant ? 'Hide' : 'Ask'} AI Assistant
+        <MessageSquare className="w-4 h-4 text-amber-300" />
+        <span className="font-serif font-semibold text-amber-200 text-sm">
+          {showAiAssistant ? 'Hide' : 'Ask'} the Sage
         </span>
       </button>
 
@@ -147,24 +171,24 @@ export default function PlayModeAssistant({ game, players, onComplete }: PlayMod
         <button
           onClick={handlePrevPhase}
           disabled={currentPhase === 0}
-          className="px-6 py-3 bg-gray-100 hover:bg-purple-50 border border-gray-200 disabled:opacity-40 disabled:cursor-not-allowed text-gray-900 rounded-xl font-semibold font-ui transition-all flex items-center gap-2 active:scale-95"
+          className="px-5 py-2.5 bg-stone-800/70 hover:bg-stone-700/70 border border-amber-900/40 disabled:opacity-40 disabled:cursor-not-allowed text-amber-100 rounded-lg font-serif text-sm transition-colors flex items-center gap-2"
         >
-          <ChevronLeft className="w-5 h-5" />
+          <ChevronLeft className="w-4 h-4" />
           Previous
         </button>
         <button
           onClick={handleNextPhase}
-          className="flex-1 bg-gradient-to-r from-violet-500 to-purple-600 text-white rounded-xl px-6 py-3 font-semibold font-ui flex items-center justify-center gap-2 active:scale-95 hover:from-violet-400 hover:to-purple-500 shadow-lg shadow-purple-200 transition-all"
+          className="flex-1 bg-gradient-to-b from-amber-500 to-amber-700 hover:from-amber-400 hover:to-amber-600 border border-amber-400/40 text-stone-950 rounded-lg px-5 py-2.5 font-serif font-semibold flex items-center justify-center gap-2 shadow-md shadow-amber-900/30 transition-colors"
         >
           {currentPhase < phases.length - 1 ? (
             <>
               Next Phase
-              <ChevronRight className="w-5 h-5" />
+              <ChevronRight className="w-4 h-4" />
             </>
           ) : (
             <>
               Complete Game
-              <CheckCircle className="w-5 h-5" />
+              <CheckCircle className="w-4 h-4" />
             </>
           )}
         </button>
@@ -179,20 +203,20 @@ function generateGamePhases(game: Game, playerCount: number) {
       shortName: 'Setup',
       title: 'Game Setup',
       subtitle: 'Prepare the game board and components',
-      icon: <Users className="w-6 h-6 text-white" />,
+      icon: <Users className="w-6 h-6 text-stone-950" />,
       instructions: [
         `Set up the game board in the center of the playing area`,
         `Each player chooses a color and takes their player pieces`,
         `Shuffle and deal cards according to the rules`,
         `Place tokens and markers in their starting positions`,
       ],
-      tip: 'Take your time with setup - a proper setup makes the game run smoothly!',
+      tip: 'Take your time with setup — a proper setup makes the game run smoothly!',
     },
     {
       shortName: 'Start',
       title: 'Starting the Game',
       subtitle: 'Determine first player and starting positions',
-      icon: <Sparkles className="w-6 h-6 text-white" />,
+      icon: <Sparkles className="w-6 h-6 text-stone-950" />,
       instructions: [
         `Determine the starting player (usually youngest or most recent winner)`,
         `Review the victory conditions with all players`,
@@ -204,25 +228,25 @@ function generateGamePhases(game: Game, playerCount: number) {
     {
       shortName: 'Round 1',
       title: 'First Round',
-      subtitle: 'Practice round - learn the mechanics',
-      icon: <Clock className="w-6 h-6 text-white" />,
+      subtitle: 'Practice round — learn the mechanics',
+      icon: <Clock className="w-6 h-6 text-stone-950" />,
       instructions: [
         `Starting player takes their turn`,
         `Follow the turn structure: Draw, Action, Discard (if applicable)`,
         `Ask questions if anything is unclear`,
         `Continue clockwise around the table`,
       ],
-      tip: 'The first round is for learning - don\'t worry about optimal strategy!',
+      tip: "The first round is for learning — don't worry about optimal strategy!",
     },
     {
       shortName: 'Mid',
       title: 'Mid-Game',
       subtitle: 'Core gameplay phase',
-      icon: <Flame className="w-6 h-6 text-white" />,
+      icon: <Flame className="w-6 h-6 text-stone-950" />,
       instructions: [
         `Continue taking turns in order`,
         `Track score/resources as they change`,
-        `Pay attention to other players\' strategies`,
+        `Pay attention to other players' strategies`,
         `Use your turn actions wisely`,
       ],
       tip: 'Keep an eye on the victory conditions and plan ahead!',
@@ -231,14 +255,14 @@ function generateGamePhases(game: Game, playerCount: number) {
       shortName: 'End',
       title: 'End Game',
       subtitle: 'Final scoring and winner determination',
-      icon: <Flag className="w-6 h-6 text-white" />,
+      icon: <Flag className="w-6 h-6 text-stone-950" />,
       instructions: [
         `Complete the final round`,
         `Count up all points/resources`,
         `Apply any end-game bonuses`,
         `Determine the winner!`,
       ],
-      tip: 'Don\'t forget end-game bonuses - they can change everything!',
+      tip: "Don't forget end-game bonuses — they can change everything!",
     },
   ];
 }

@@ -23,10 +23,12 @@ import {
   Plus,
   Minus,
   Sparkles,
+  Trash2,
 } from 'lucide-react';
 import { createPortal } from 'react-dom';
 import { Game, Player } from '@/types/game';
 import { cn } from '@/lib/utils';
+import { decodeHtmlEntities } from '@/lib/text/decodeHtml';
 import { usePlaySessionStore } from '@/lib/store/playSessionStore';
 import { buildGameContext } from '@/lib/ai/prompts';
 import WizardChatModal from '@/components/ai/WizardChatModal';
@@ -86,24 +88,11 @@ interface GameDetailProps {
   onClose: () => void;
   onToggleFavorite: (gameId: string) => void;
   isFavorite: boolean;
+  onRemove?: (gameId: string) => void;
 }
 
 function cleanDescription(description: string): string {
-  if (!description) return '';
-
-  let cleaned = description
-    .replace(/&quot;/g, '"')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&#39;/g, "'")
-    .replace(/&#10;/g, '\n')
-    .replace(/&nbsp;/g, ' ');
-
-  cleaned = cleaned.replace(/<[^>]*>/g, '');
-  cleaned = cleaned.replace(/\n\s*\n/g, '\n\n').trim();
-
-  return cleaned;
+  return decodeHtmlEntities(description);
 }
 
 function getAmazonSearchUrl(gameName: string): string {
@@ -117,6 +106,7 @@ export default function GameDetail({
   onClose,
   onToggleFavorite,
   isFavorite,
+  onRemove,
 }: GameDetailProps) {
   const [liveDescription, setLiveDescription] = useState<string | null>(null);
   const [isLoadingDescription, setIsLoadingDescription] = useState(false);
@@ -570,6 +560,24 @@ export default function GameDetail({
                         <span>Rulebook</span>
                         <ExternalLink className="w-3 h-3" />
                       </a>
+                    )}
+
+                    {onRemove && (
+                      <button
+                        onClick={() => {
+                          if (typeof window !== 'undefined') {
+                            const ok = window.confirm(`Remove "${game.name}" from thy library?`);
+                            if (!ok) return;
+                          }
+                          onRemove(game.id);
+                          onClose();
+                        }}
+                        className="inline-flex items-center gap-2 px-3 py-2 bg-red-950/60 hover:bg-red-900/70 border border-red-800/60 text-red-200 rounded-lg transition-colors text-sm ml-auto"
+                        aria-label="Remove from library"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        <span>Remove from Library</span>
+                      </button>
                     )}
                   </section>
                 </div>
