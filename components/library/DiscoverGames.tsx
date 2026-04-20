@@ -26,6 +26,12 @@ const FALLBACK_IMAGES: Record<string, string> = {
 
 type CategoryKey = 'top500' | 'party' | 'family' | 'strategy';
 
+// Render budget per shelf. Mobile Safari OOM-crashes when all 800 catalog cards
+// (each with images and motion wrappers) mount at once. We start small and let
+// users tap "Show more" to expand.
+const INITIAL_VISIBLE = 60;
+const VISIBLE_INCREMENT = 60;
+
 interface ShelfMeta {
   key: CategoryKey;
   description: string;
@@ -235,6 +241,12 @@ function CatalogShelf({
   onCardClick,
 }: CatalogShelfProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  // While searching, the parent already filtered down to a small set — render
+  // them all. Otherwise apply the per-shelf render cap to protect mobile Safari.
+  const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE);
+  const cap = searching ? games.length : visibleCount;
+  const visibleGames = games.slice(0, cap);
+  const hiddenCount = Math.max(0, games.length - visibleGames.length);
 
   const scroll = (direction: 'left' | 'right') => {
     if (!scrollRef.current) return;
@@ -307,7 +319,7 @@ function CatalogShelf({
           className="flex gap-3 sm:gap-4 overflow-x-auto scrollbar-hide scroll-smooth pb-2 snap-x snap-mandatory"
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
-          {games.map((game) => (
+          {visibleGames.map((game) => (
             <motion.div
               key={game.bggId}
               initial={{ opacity: 0, scale: 0.95 }}
@@ -325,6 +337,23 @@ function CatalogShelf({
               />
             </motion.div>
           ))}
+          {hiddenCount > 0 && (
+            <button
+              type="button"
+              onClick={() =>
+                setVisibleCount((n) =>
+                  Math.min(n + VISIBLE_INCREMENT, games.length)
+                )
+              }
+              className="flex-shrink-0 w-44 sm:w-56 md:w-60 snap-start aspect-[3/4] flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-amber-500/40 bg-stone-950/60 hover:bg-stone-900/80 hover:border-amber-400/70 text-amber-200 transition-colors font-serif"
+            >
+              <ChevronRight className="w-7 h-7 text-amber-400" />
+              <span className="text-sm">Show more</span>
+              <span className="text-[11px] text-amber-200/60 italic">
+                +{Math.min(VISIBLE_INCREMENT, hiddenCount)} of {hiddenCount} left
+              </span>
+            </button>
+          )}
         </div>
       </div>
     </section>
@@ -363,13 +392,15 @@ function CatalogCard({
       <div className="relative w-full aspect-[3/4] flex items-center justify-center bg-gradient-to-br from-stone-900 to-stone-950">
         {hasValidImage ? (
           <>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={imageUrl}
-              alt=""
+            {/* Decorative dark vignette in place of a duplicated blurred <img>
+                backdrop — same visual framing without doubling DOM image count. */}
+            <div
               aria-hidden="true"
-              className="absolute inset-0 w-full h-full object-cover blur-lg opacity-40 scale-110"
-              loading="lazy"
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                background:
+                  'radial-gradient(ellipse at 50% 50%, rgba(120, 53, 15, 0.25) 0%, rgba(0,0,0,0) 60%)',
+              }}
             />
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
@@ -385,6 +416,7 @@ function CatalogCard({
                 }
               }}
               loading="lazy"
+              decoding="async"
             />
           </>
         ) : (
