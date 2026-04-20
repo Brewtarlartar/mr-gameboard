@@ -17,10 +17,14 @@ export default function PlayerSetup({
   gameAttributes = [],
 }: PlayerSetupProps) {
   const [newPlayerName, setNewPlayerName] = useState('');
+  const [nameHint, setNameHint] = useState<string | null>(null);
   const addInputRef = useRef<HTMLInputElement>(null);
 
   const addPlayer = () => {
-    if (!newPlayerName.trim()) return;
+    if (!newPlayerName.trim()) {
+      setNameHint('A name is required.');
+      return;
+    }
 
     const newPlayer: Player = {
       id: Date.now().toString(),
@@ -30,6 +34,7 @@ export default function PlayerSetup({
 
     onPlayersChange([...players, newPlayer]);
     setNewPlayerName('');
+    setNameHint(null);
     // Keep focus on the input so the viewport stays put and the user can add another player.
     requestAnimationFrame(() => {
       addInputRef.current?.focus({ preventScroll: true });
@@ -55,29 +60,39 @@ export default function PlayerSetup({
         </h2>
       </div>
 
-      <div className="flex gap-2">
-        <input
-          ref={addInputRef}
-          type="text"
-          value={newPlayerName}
-          onChange={(e) => setNewPlayerName(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              e.preventDefault();
-              addPlayer();
-            }
-          }}
-          placeholder="Enter player name..."
-          className="flex-1 px-3.5 py-2.5 bg-stone-950/70 border border-amber-900/50 rounded-lg text-amber-100 placeholder:text-amber-200/40 text-sm font-serif focus:outline-none focus:ring-2 focus:ring-amber-500/40 focus:border-amber-500/50 transition-colors"
-        />
-        <button
-          onClick={addPlayer}
-          disabled={!newPlayerName.trim()}
-          className="px-4 py-2.5 bg-gradient-to-b from-amber-500 to-amber-700 hover:from-amber-400 hover:to-amber-600 border border-amber-400/40 text-stone-950 font-serif font-semibold rounded-lg flex items-center gap-1.5 shadow-md shadow-amber-900/30 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:from-amber-500 disabled:hover:to-amber-700"
-        >
-          <Plus className="w-4 h-4" />
-          Add
-        </button>
+      <div>
+        <div className="flex gap-2">
+          <input
+            ref={addInputRef}
+            type="text"
+            value={newPlayerName}
+            onChange={(e) => {
+              setNewPlayerName(e.target.value);
+              if (nameHint) setNameHint(null);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                addPlayer();
+              }
+            }}
+            placeholder="Enter player name..."
+            className="flex-1 px-3.5 py-2.5 bg-stone-950/70 border border-amber-900/50 rounded-lg text-amber-100 placeholder:text-amber-200/40 text-sm font-serif focus:outline-none focus:ring-2 focus:ring-amber-500/40 focus:border-amber-500/50 transition-colors"
+          />
+          <button
+            onClick={addPlayer}
+            disabled={!newPlayerName.trim()}
+            className="px-4 py-2.5 bg-gradient-to-b from-amber-500 to-amber-700 hover:from-amber-400 hover:to-amber-600 border border-amber-400/40 text-stone-950 font-serif font-semibold rounded-lg flex items-center gap-1.5 shadow-md shadow-amber-900/30 transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:from-amber-500 disabled:hover:to-amber-700"
+          >
+            <Plus className="w-4 h-4" />
+            Add
+          </button>
+        </div>
+        {nameHint && (
+          <p className="mt-1.5 text-[11px] text-red-300/90 font-serif italic">
+            {nameHint}
+          </p>
+        )}
       </div>
 
       <AnimatePresence>

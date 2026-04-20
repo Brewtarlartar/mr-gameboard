@@ -50,6 +50,7 @@ export default function StrategyModal({
 
   useEffect(() => {
     if (isOpen) setDepth(initialDepth);
+    if (!isOpen) setError(null);
   }, [isOpen, initialDepth]);
 
   useEffect(() => {

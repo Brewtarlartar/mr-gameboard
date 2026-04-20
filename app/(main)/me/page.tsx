@@ -113,6 +113,21 @@ export default function MePage() {
         <p className="text-[11px] text-amber-200/50 font-serif italic">
           v1.0 · beta · Forged for tabletop nights and long campaigns alike.
         </p>
+        <div className="mt-3 flex items-center gap-3 text-[11px] font-serif">
+          <Link
+            href="/about/privacy"
+            className="text-amber-200/70 hover:text-amber-100 underline underline-offset-2"
+          >
+            Privacy
+          </Link>
+          <span className="text-amber-200/30">·</span>
+          <Link
+            href="/about/terms"
+            className="text-amber-200/70 hover:text-amber-100 underline underline-offset-2"
+          >
+            Terms
+          </Link>
+        </div>
       </section>
 
       {/* Danger zone */}

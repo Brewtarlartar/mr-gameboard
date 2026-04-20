@@ -56,6 +56,10 @@ export default function TeachMeModal({
   }, []);
 
   useEffect(() => {
+    if (!isOpen) setError(null);
+  }, [isOpen]);
+
+  useEffect(() => {
     if (initialGameName !== undefined) {
       setGameName(initialGameName);
     }
