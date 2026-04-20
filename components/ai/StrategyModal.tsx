@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Wand2, Loader2 } from 'lucide-react';
@@ -33,6 +34,11 @@ export default function StrategyModal({
   const [isStreaming, setIsStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+  const [portalMounted, setPortalMounted] = useState(false);
+
+  useEffect(() => {
+    setPortalMounted(true);
+  }, []);
 
   useEffect(() => {
     if (isOpen) setDepth(initialDepth);
@@ -272,6 +278,37 @@ export default function StrategyModal({
   if (inline) {
     const popupOpen = isOpen && (isStreaming || !!content || !!error);
 
+    const popupNode = (
+      <AnimatePresence>
+        {popupOpen && (
+          <motion.div
+            key="strategy-popup"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-black/75 backdrop-blur-sm flex items-stretch justify-center sm:items-center sm:p-4"
+            onClick={handleReset}
+            style={{
+              paddingTop: 'calc(env(safe-area-inset-top, 0px) + 12px)',
+              paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 84px)',
+            }}
+          >
+            <motion.div
+              initial={{ y: '6%', opacity: 0, scale: 0.98 }}
+              animate={{ y: 0, opacity: 1, scale: 1 }}
+              exit={{ y: '6%', opacity: 0, scale: 0.98 }}
+              transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+              className="w-full sm:max-w-2xl sm:h-[82vh] rounded-2xl bg-stone-900 border border-amber-900/50 shadow-2xl shadow-amber-950/40 flex flex-col overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {renderHeader(handleReset, 'Close result')}
+              {resultSection}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    );
+
     return (
       <>
         <AnimatePresence>
@@ -292,30 +329,9 @@ export default function StrategyModal({
           )}
         </AnimatePresence>
 
-        <AnimatePresence>
-          {popupOpen && (
-            <motion.div
-              key="strategy-popup"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[60] bg-black/75 backdrop-blur-sm flex items-end sm:items-center sm:justify-center sm:p-4"
-              onClick={handleReset}
-            >
-              <motion.div
-                initial={{ y: '6%', opacity: 0, scale: 0.98 }}
-                animate={{ y: 0, opacity: 1, scale: 1 }}
-                exit={{ y: '6%', opacity: 0, scale: 0.98 }}
-                transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-                className="w-full sm:max-w-2xl h-[92vh] sm:h-[82vh] sm:rounded-2xl bg-stone-900 border-t sm:border border-amber-900/50 shadow-2xl shadow-amber-950/40 flex flex-col overflow-hidden safe-area-pt safe-area-pb"
-                onClick={(e) => e.stopPropagation()}
-              >
-                {renderHeader(handleReset, 'Close result')}
-                {resultSection}
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {portalMounted && typeof document !== 'undefined'
+          ? createPortal(popupNode, document.body)
+          : null}
       </>
     );
   }

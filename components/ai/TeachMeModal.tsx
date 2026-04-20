@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Loader2, ChevronLeft, ChevronRight, Swords, MessageCircle, Plus, Minus } from 'lucide-react';
@@ -41,7 +42,12 @@ export default function TeachMeModal({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [wizardOpen, setWizardOpen] = useState(false);
+  const [portalMounted, setPortalMounted] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    setPortalMounted(true);
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -362,6 +368,37 @@ export default function TeachMeModal({
     const popupSubtitle = plan ? plan.title : inlineSubtitle;
     const popupOpen = isOpen && !!plan;
 
+    const popupNode = (
+      <AnimatePresence>
+        {popupOpen && (
+          <motion.div
+            key="teach-popup"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-black/75 backdrop-blur-sm flex items-stretch justify-center sm:items-center sm:p-4"
+            onClick={handleClosePlan}
+            style={{
+              paddingTop: 'calc(env(safe-area-inset-top, 0px) + 12px)',
+              paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 84px)',
+            }}
+          >
+            <motion.div
+              initial={{ y: '6%', opacity: 0, scale: 0.98 }}
+              animate={{ y: 0, opacity: 1, scale: 1 }}
+              exit={{ y: '6%', opacity: 0, scale: 0.98 }}
+              transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+              className="w-full sm:max-w-2xl sm:h-[85vh] rounded-2xl bg-stone-900 border border-amber-900/50 shadow-2xl shadow-amber-950/40 flex flex-col overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {renderHeader(handleClosePlan, popupSubtitle, 'Close teach')}
+              {planBody}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    );
+
     return (
       <>
         <AnimatePresence>
@@ -382,30 +419,9 @@ export default function TeachMeModal({
           )}
         </AnimatePresence>
 
-        <AnimatePresence>
-          {popupOpen && (
-            <motion.div
-              key="teach-popup"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[60] bg-black/75 backdrop-blur-sm flex items-end sm:items-center sm:justify-center sm:p-4"
-              onClick={handleClosePlan}
-            >
-              <motion.div
-                initial={{ y: '6%', opacity: 0, scale: 0.98 }}
-                animate={{ y: 0, opacity: 1, scale: 1 }}
-                exit={{ y: '6%', opacity: 0, scale: 0.98 }}
-                transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-                className="w-full sm:max-w-2xl h-[92vh] sm:h-[85vh] sm:rounded-2xl bg-stone-900 border-t sm:border border-amber-900/50 shadow-2xl shadow-amber-950/40 flex flex-col overflow-hidden safe-area-pt"
-                onClick={(e) => e.stopPropagation()}
-              >
-                {renderHeader(handleClosePlan, popupSubtitle, 'Close teach')}
-                {planBody}
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {portalMounted && typeof document !== 'undefined'
+          ? createPortal(popupNode, document.body)
+          : null}
 
         <WizardChatModal
           isOpen={wizardOpen}
