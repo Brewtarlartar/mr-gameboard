@@ -61,9 +61,9 @@ export default function RootLayout({
     <html lang="en">
       <head>
         <link rel="preload" as="image" href="/Intro.png" fetchPriority="high" />
-        <style>{`html,body{background:#000;margin:0}`}</style>
+        <link rel="preload" as="image" href="/tome-bg.jpg" fetchPriority="high" />
       </head>
-      <body className="antialiased" style={{ background: '#000' }}>
+      <body className="antialiased">
         <div className="tome-watermark" aria-hidden="true">
           <span className="tome-watermark__text">THE TOME</span>
           <span className="tome-watermark__subtitle">Board game companion</span>

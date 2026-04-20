@@ -71,20 +71,23 @@ body::before {
  * Alpha mask = real fade to invisible; does not tint or block the title.
  */
 .tome-page-scroll {
-  /* Alpha mask: narrow band hugging THE TOME + subheader only */
+  /* Alpha mask: narrow band hugging THE TOME + subheader only.
+     Offset the whole band down by env(safe-area-inset-top) so that on
+     devices with a notch/dynamic island the page doesn't scroll under the
+     status bar and get clipped by it. */
   -webkit-mask-image: linear-gradient(
     to bottom,
     rgba(255, 255, 255, 0) 0,
-    rgba(255, 255, 255, 0) min(10vh, 84px),
-    rgba(255, 255, 255, 0.4) min(14vh, 126px),
-    rgba(255, 255, 255, 1) min(19vh, 172px)
+    rgba(255, 255, 255, 0) calc(env(safe-area-inset-top, 0px) + min(10vh, 84px)),
+    rgba(255, 255, 255, 0.4) calc(env(safe-area-inset-top, 0px) + min(14vh, 126px)),
+    rgba(255, 255, 255, 1) calc(env(safe-area-inset-top, 0px) + min(19vh, 172px))
   );
   mask-image: linear-gradient(
     to bottom,
     rgba(255, 255, 255, 0) 0,
-    rgba(255, 255, 255, 0) min(10vh, 84px),
-    rgba(255, 255, 255, 0.4) min(14vh, 126px),
-    rgba(255, 255, 255, 1) min(19vh, 172px)
+    rgba(255, 255, 255, 0) calc(env(safe-area-inset-top, 0px) + min(10vh, 84px)),
+    rgba(255, 255, 255, 0.4) calc(env(safe-area-inset-top, 0px) + min(14vh, 126px)),
+    rgba(255, 255, 255, 1) calc(env(safe-area-inset-top, 0px) + min(19vh, 172px))
   );
   -webkit-mask-size: 100% 100%;
   mask-size: 100% 100%;
@@ -104,9 +107,10 @@ body::before {
   justify-content: flex-start;
   pointer-events: none;
   /* On mobile the top nav is hidden, so the watermark sits flush at the top
-     with just a small breathing space. From md+ we add room for the 3.5rem
-     fixed nav above it. */
-  padding-top: clamp(0.5rem, 1.5vh, 1.5rem);
+     with just a small breathing space — but we must clear the iOS status
+     bar / notch / dynamic island so the title + subtitle aren't covered.
+     From md+ we add room for the 3.5rem fixed nav above it. */
+  padding-top: calc(env(safe-area-inset-top, 0px) + clamp(0.5rem, 1.5vh, 1.5rem));
   user-select: none;
   text-align: center;
   transition: opacity 0.25s ease;
@@ -114,7 +118,7 @@ body::before {
 
 @media (min-width: 768px) {
   .tome-watermark {
-    padding-top: calc(3.5rem + clamp(0.5rem, 1.5vh, 1.5rem));
+    padding-top: calc(env(safe-area-inset-top, 0px) + 3.5rem + clamp(0.5rem, 1.5vh, 1.5rem));
   }
 }
 
@@ -495,6 +499,18 @@ body::after {
     scrollbar-width: none;
   }
   .scrollbar-hide::-webkit-scrollbar { display: none; }
+
+  /* iOS safe-area helpers: pad content so it clears the notch / dynamic
+     island at the top and the home indicator at the bottom. */
+  .safe-area-pt {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  .safe-area-pb {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .safe-area-top {
+    top: env(safe-area-inset-top, 0px);
+  }
 }
 
 ::-webkit-scrollbar {

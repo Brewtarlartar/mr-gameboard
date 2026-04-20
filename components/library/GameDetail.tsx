@@ -549,19 +549,6 @@ export default function GameDetail({
                       </a>
                     )}
 
-                    {game.rulebookUrl && (
-                      <a
-                        href={game.rulebookUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-2 px-3 py-2 bg-stone-900/70 hover:bg-stone-800 border border-amber-900/50 text-stone-200 rounded-lg transition-colors text-sm"
-                      >
-                        <BookOpen className="w-4 h-4" />
-                        <span>Rulebook</span>
-                        <ExternalLink className="w-3 h-3" />
-                      </a>
-                    )}
-
                     {onRemove && (
                       <button
                         onClick={() => {
