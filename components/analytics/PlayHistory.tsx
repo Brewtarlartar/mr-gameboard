@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Calendar, Clock, Trophy, Users, Star, Trash2 } from 'lucide-react';
+import { Calendar, Clock, Trophy, Users, Star, Trash2, Crown, HeartHandshake } from 'lucide-react';
 import { usePlayHistoryStore } from '@/lib/store/playHistoryStore';
 import { format } from 'date-fns';
 
@@ -42,6 +42,10 @@ export default function PlayHistory() {
       <div className="space-y-3">
         {sortedSessions.map((session, index) => {
           const isExpanded = selectedSession === session.id;
+          const winners = session.players.filter((p) => p.isWinner);
+          const isCoop = session.mode === 'coop';
+          const coopWon = isCoop && session.coopOutcome === 'win';
+          const coopLost = isCoop && session.coopOutcome === 'loss';
           return (
             <motion.div
               key={session.id}
@@ -53,9 +57,34 @@ export default function PlayHistory() {
             >
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0">
-                  <h3 className="text-lg font-serif font-bold text-amber-100 mb-2 truncate">
+                  <h3 className="text-lg font-serif font-bold text-amber-100 mb-1.5 truncate">
                     {session.gameName}
                   </h3>
+
+                  {winners.length > 0 && !isCoop && (
+                    <div className="flex items-center gap-1.5 text-xs font-serif mb-2">
+                      <Crown className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                      <span className="text-amber-200/90 font-semibold capitalize truncate">
+                        {winners.map((w) => w.name).join(' & ')} won
+                      </span>
+                    </div>
+                  )}
+                  {coopWon && (
+                    <div className="flex items-center gap-1.5 text-xs font-serif mb-2">
+                      <HeartHandshake className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                      <span className="text-emerald-200/90 font-semibold">
+                        Group victory
+                      </span>
+                    </div>
+                  )}
+                  {coopLost && (
+                    <div className="flex items-center gap-1.5 text-xs font-serif mb-2">
+                      <HeartHandshake className="w-3.5 h-3.5 text-red-400 shrink-0" />
+                      <span className="text-red-200/80 font-semibold">
+                        Group defeat
+                      </span>
+                    </div>
+                  )}
 
                   <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs text-amber-200/70 mb-3 font-serif">
                     <div className="flex items-center gap-1.5">
