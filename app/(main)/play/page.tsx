@@ -56,7 +56,11 @@ export default function PlayModePage() {
 
   const handleComplete = () => {
     const gameName = selectedGame?.name ?? 'the session';
-    const { mode, players: scoreRows, coopOutcome } = draft.scoreState;
+    const { mode, players: scoreRows, coopOutcome } = draft.scoreState ?? {
+      mode: 'competitive' as const,
+      players: [],
+      coopOutcome: null,
+    };
     let summary = `${gameName} saved to thy chronicle`;
     if (scoreRows.length > 0) {
       if (mode === 'competitive') {

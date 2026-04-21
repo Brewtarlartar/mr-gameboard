@@ -282,6 +282,24 @@ export const usePlaySessionStore = create<PlaySessionStore>()(
     }),
     {
       name: 'play-session-draft',
+      version: 1,
+      merge: (persistedState, currentState) => {
+        const persisted = persistedState as { draft?: Partial<ActiveDraft> } | undefined;
+        const persistedDraft = persisted?.draft;
+        if (!persistedDraft) return currentState;
+        const mergedScoreState: ScoreState = {
+          ...emptyScoreState,
+          ...(persistedDraft.scoreState ?? {}),
+        };
+        return {
+          ...currentState,
+          draft: {
+            ...emptyDraft,
+            ...persistedDraft,
+            scoreState: mergedScoreState,
+          },
+        };
+      },
     },
   ),
 );

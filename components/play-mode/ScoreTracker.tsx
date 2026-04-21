@@ -137,9 +137,13 @@ interface ScoreTrackerProps {
 
 export default function ScoreTracker({ game }: ScoreTrackerProps = {}) {
   const haptic = useHapticFeedback();
-  const { mode, templateId, players, coopOutcome } = usePlaySessionStore(
-    (s) => s.draft.scoreState,
-  );
+  const scoreState = usePlaySessionStore((s) => s.draft.scoreState);
+  const { mode, templateId, players, coopOutcome } = scoreState ?? {
+    mode: 'competitive' as SessionMode,
+    templateId: 'simple',
+    players: [] as ScorePlayerRow[],
+    coopOutcome: null,
+  };
   const setScoreMode = usePlaySessionStore((s) => s.setScoreMode);
   const setScoreTemplate = usePlaySessionStore((s) => s.setScoreTemplate);
   const setScorePlayers = usePlaySessionStore((s) => s.setScorePlayers);
