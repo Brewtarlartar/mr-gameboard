@@ -13,8 +13,10 @@ const LIMITS: Record<RouteKey, { minute: number; day: number }> = {
 let redisSingleton: Redis | null = null;
 function getRedis(): Redis | null {
   if (redisSingleton) return redisSingleton;
-  const url = process.env.UPSTASH_REDIS_REST_URL;
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+  // Vercel Marketplace's Upstash integration provisions KV_REST_API_*.
+  // Accept both names so manual setups (UPSTASH_REDIS_REST_*) also work.
+  const url = process.env.KV_REST_API_URL ?? process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.KV_REST_API_TOKEN ?? process.env.UPSTASH_REDIS_REST_TOKEN;
   if (!url || !token) return null;
   redisSingleton = new Redis({ url, token });
   return redisSingleton;
