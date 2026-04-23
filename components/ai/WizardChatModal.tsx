@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Send, Trash2, Loader2, RotateCcw } from 'lucide-react';
 import { useAIStore } from '@/lib/store/aiStore';
+import { readApiError } from '@/lib/ai/readApiError';
 import MarkdownMessage from './MarkdownMessage';
 
 interface Props {
@@ -56,7 +57,7 @@ export default function WizardChatModal({ isOpen, onClose, gameContext, inline =
       });
 
       if (!response.ok || !response.body) {
-        throw new Error(`Request failed (${response.status})`);
+        throw new Error(await readApiError(response));
       }
 
       const reader = response.body.getReader();
@@ -185,7 +186,11 @@ export default function WizardChatModal({ isOpen, onClose, gameContext, inline =
         {lastError && !isStreaming && (
           <div className="flex justify-start">
             <div className="max-w-[92%] bg-red-900/30 border border-red-700/50 text-red-200 text-sm rounded-2xl rounded-tl-sm px-4 py-2 flex items-center justify-between gap-3">
-              <span>Sorry — I hit an error reaching the AI. {lastError}</span>
+              <span>
+                {lastError.startsWith('The Tome') || lastError.startsWith('Thou')
+                  ? lastError
+                  : `Sorry — I hit an error reaching the AI. ${lastError}`}
+              </span>
               <button
                 type="button"
                 onClick={handleRetry}

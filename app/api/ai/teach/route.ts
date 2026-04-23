@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { getAnthropic, MODELS } from '@/lib/ai/client';
 import { teachSystem, buildGameContext } from '@/lib/ai/prompts';
 import type { TeachPlan, TeachChapter, TeachPlayer } from '@/lib/ai/types';
+import { checkRateLimit, rateLimitResponse } from '@/lib/rate-limit';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -39,6 +40,9 @@ function extractJson(text: string): TeachPlan | null {
 }
 
 export async function POST(req: NextRequest) {
+  const gate = await checkRateLimit(req, 'teach');
+  if (!gate.ok) return rateLimitResponse(gate);
+
   let body: TeachRequestBody;
   try {
     body = await req.json();

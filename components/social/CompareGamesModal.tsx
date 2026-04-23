@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { Game } from '@/types/game';
 import { decodeHtmlEntities } from '@/lib/text/decodeHtml';
+import { readApiError } from '@/lib/ai/readApiError';
 
 interface CompareGamesModalProps {
   isOpen: boolean;
@@ -136,7 +137,8 @@ CONS:
         }),
       });
 
-      if (!response.ok || !response.body) throw new Error('Failed to generate analysis');
+      if (!response.ok) throw new Error(await readApiError(response));
+      if (!response.body) throw new Error('Failed to generate analysis');
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
@@ -157,12 +159,16 @@ CONS:
         })
       );
     } catch (error) {
+      const msg = error instanceof Error ? error.message : 'AI error';
+      const isRateLimit = msg.startsWith('The Tome') || msg.startsWith('Thou');
       console.error('[Game Analysis] Error:', error);
       setGameAnalyses((prev) =>
         new Map(prev).set(game.id, {
           gameId: game.id,
-          pros: ['Great gameplay', 'Popular choice', 'Well-designed'],
-          cons: ['Analysis unavailable', 'Try again later', 'AI error'],
+          pros: isRateLimit
+            ? ['Try again in a moment']
+            : ['Great gameplay', 'Popular choice', 'Well-designed'],
+          cons: isRateLimit ? [msg] : ['Analysis unavailable', 'Try again later', 'AI error'],
           isLoading: false,
         })
       );

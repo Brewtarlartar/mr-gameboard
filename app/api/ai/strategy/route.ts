@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { getAnthropic, MODELS } from '@/lib/ai/client';
 import { strategySystem, buildGameContext } from '@/lib/ai/prompts';
 import { textStreamToResponse } from '@/lib/ai/stream';
+import { checkRateLimit, rateLimitResponse } from '@/lib/rate-limit';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -14,6 +15,9 @@ interface StrategyRequestBody {
 }
 
 export async function POST(req: NextRequest) {
+  const gate = await checkRateLimit(req, 'strategy');
+  if (!gate.ok) return rateLimitResponse(gate);
+
   let body: StrategyRequestBody;
   try {
     body = await req.json();

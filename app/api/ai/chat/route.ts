@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { getAnthropic, MODELS } from '@/lib/ai/client';
 import { wizardSystem } from '@/lib/ai/prompts';
 import { textStreamToResponse } from '@/lib/ai/stream';
+import { checkRateLimit, rateLimitResponse } from '@/lib/rate-limit';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -12,6 +13,9 @@ interface ChatRequestBody {
 }
 
 export async function POST(req: NextRequest) {
+  const gate = await checkRateLimit(req, 'chat');
+  if (!gate.ok) return rateLimitResponse(gate);
+
   let body: ChatRequestBody;
   try {
     body = await req.json();

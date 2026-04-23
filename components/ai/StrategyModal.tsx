@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Wand2, Loader2, Send } from 'lucide-react';
 import { useAIStore } from '@/lib/store/aiStore';
+import { readApiError } from '@/lib/ai/readApiError';
 import GamePicker from './GamePicker';
 import MarkdownMessage from './MarkdownMessage';
 
@@ -102,7 +103,7 @@ export default function StrategyModal({
       });
 
       if (!response.ok || !response.body) {
-        throw new Error(`Request failed (${response.status})`);
+        throw new Error(await readApiError(response));
       }
 
       const reader = response.body.getReader();
@@ -176,7 +177,7 @@ export default function StrategyModal({
       });
 
       if (!response.ok || !response.body) {
-        throw new Error(`Request failed (${response.status})`);
+        throw new Error(await readApiError(response));
       }
 
       const reader = response.body.getReader();
@@ -193,12 +194,12 @@ export default function StrategyModal({
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Unknown error';
+      const body =
+        msg.startsWith('The Tome') || msg.startsWith('Thou')
+          ? msg
+          : `Sorry — I hit an error reaching the Sage. ${msg}`;
       setFollowUps((prev) =>
-        prev.map((m) =>
-          m.id === asstMsg.id
-            ? { ...m, content: `Sorry — I hit an error reaching the Sage. ${msg}` }
-            : m,
-        ),
+        prev.map((m) => (m.id === asstMsg.id ? { ...m, content: body } : m)),
       );
     } finally {
       setFollowUpStreaming(false);

@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Loader2, ChevronLeft, ChevronRight, Swords, MessageCircle, Plus, Minus } from 'lucide-react';
 import { useAIStore, teachKey } from '@/lib/store/aiStore';
+import { readApiError } from '@/lib/ai/readApiError';
 import type { TeachPlan, TeachPlayer } from '@/lib/ai/types';
 import GamePicker from './GamePicker';
 import MarkdownMessage from './MarkdownMessage';
@@ -142,8 +143,7 @@ export default function TeachMeModal({
       });
 
       if (!response.ok) {
-        const text = await response.text().catch(() => '');
-        throw new Error(text || `Request failed (${response.status})`);
+        throw new Error(await readApiError(response));
       }
 
       const data = (await response.json()) as TeachPlan;
