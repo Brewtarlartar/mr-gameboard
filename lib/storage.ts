@@ -1,4 +1,12 @@
 import { Game } from '@/types/game';
+import {
+  pushLibraryGame,
+  removeLibraryGame as syncRemoveLibraryGame,
+  setLibraryGameFavorite as syncSetFavorite,
+  pushCustomGame as syncPushCustomGame,
+  pushPreferences as syncPushPreferences,
+  clearAllServerData as syncClearAllServerData,
+} from '@/lib/sync/librarySync';
 
 const STORAGE_KEYS = {
   GAME_LIBRARY: 'mr-boardgame-library',
@@ -49,12 +57,13 @@ export function addGameToLibrary(game: Game): void {
 
   try {
     const library = getGameLibrary();
-    
+
     // Check if game already exists
     if (!library.games.some(g => g.id === game.id)) {
       library.games.push(game);
       localStorage.setItem(STORAGE_KEYS.GAME_LIBRARY, JSON.stringify(library.games));
     }
+    void pushLibraryGame(game, library.favorites.includes(game.id));
   } catch (error) {
     console.error('Error adding game to library:', error);
   }
@@ -68,9 +77,10 @@ export function removeGameFromLibrary(gameId: string): void {
     const library = getGameLibrary();
     library.games = library.games.filter(g => g.id !== gameId);
     library.favorites = library.favorites.filter(id => id !== gameId);
-    
+
     localStorage.setItem(STORAGE_KEYS.GAME_LIBRARY, JSON.stringify(library.games));
     localStorage.setItem(STORAGE_KEYS.FAVORITES, JSON.stringify(library.favorites));
+    void syncRemoveLibraryGame(gameId);
   } catch (error) {
     console.error('Error removing game from library:', error);
   }
@@ -99,6 +109,7 @@ export function toggleFavorite(gameId: string): boolean {
     }));
     localStorage.setItem(STORAGE_KEYS.GAME_LIBRARY, JSON.stringify(library.games));
 
+    void syncSetFavorite(gameId, !isFavorite);
     return !isFavorite;
   } catch (error) {
     console.error('Error toggling favorite:', error);
@@ -119,12 +130,15 @@ export function addCustomGame(game: Game): void {
   try {
     const library = getGameLibrary();
     const customGame = { ...game, isCustom: true, id: `custom-${Date.now()}` };
-    
+
     library.customGames.push(customGame);
     library.games.push(customGame);
-    
+
     localStorage.setItem(STORAGE_KEYS.CUSTOM_GAMES, JSON.stringify(library.customGames));
     localStorage.setItem(STORAGE_KEYS.GAME_LIBRARY, JSON.stringify(library.games));
+
+    void syncPushCustomGame(customGame);
+    void pushLibraryGame(customGame, false);
   } catch (error) {
     console.error('Error adding custom game:', error);
   }
@@ -151,6 +165,7 @@ export function savePreferences(preferences: UserPreferences): void {
 
   try {
     localStorage.setItem(STORAGE_KEYS.PREFERENCES, JSON.stringify(preferences));
+    void syncPushPreferences(preferences);
   } catch (error) {
     console.error('Error saving preferences:', error);
   }
@@ -163,6 +178,7 @@ export function clearAllData(): void {
   Object.values(STORAGE_KEYS).forEach(key => {
     localStorage.removeItem(key);
   });
+  void syncClearAllServerData();
 }
 
 // Update entire library (useful for batch enrichment)

@@ -3,6 +3,7 @@ import { getAnthropic, MODELS } from '@/lib/ai/client';
 import { teachSystem, buildGameContext, type AiVoice } from '@/lib/ai/prompts';
 import type { TeachPlan, TeachChapter, TeachPlayer } from '@/lib/ai/types';
 import { checkRateLimit, rateLimitResponse } from '@/lib/rate-limit';
+import { createClient as createSupabaseServerClient } from '@/lib/supabase/server';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -41,7 +42,9 @@ function extractJson(text: string): TeachPlan | null {
 }
 
 export async function POST(req: NextRequest) {
-  const gate = await checkRateLimit(req, 'teach');
+  const supabase = createSupabaseServerClient();
+  const { data: userData } = await supabase.auth.getUser();
+  const gate = await checkRateLimit(req, 'teach', userData.user?.id ?? null);
   if (!gate.ok) return rateLimitResponse(gate);
 
   let body: TeachRequestBody;
