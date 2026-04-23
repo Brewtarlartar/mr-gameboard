@@ -4,10 +4,16 @@ import type { NextRequest } from 'next/server';
 
 type RouteKey = 'chat' | 'strategy' | 'teach';
 
-const LIMITS: Record<RouteKey, { minute: number; day: number }> = {
+const LIMITS_ANON: Record<RouteKey, { minute: number; day: number }> = {
   chat: { minute: 20, day: 200 },
   strategy: { minute: 10, day: 50 },
   teach: { minute: 5, day: 20 },
+};
+
+const LIMITS_SIGNED_IN: Record<RouteKey, { minute: number; day: number }> = {
+  chat: { minute: 60, day: 1000 },
+  strategy: { minute: 30, day: 200 },
+  teach: { minute: 15, day: 80 },
 };
 
 let redisSingleton: Redis | null = null;
@@ -61,12 +67,14 @@ export type RateLimitResult = { ok: true } | RateLimitDeny;
 export async function checkRateLimit(
   req: NextRequest,
   route: RouteKey,
+  userId?: string | null,
 ): Promise<RateLimitResult> {
-  const limits = LIMITS[route];
-  const ip = getClientIp(req);
-  const key = `ip:${ip}`;
+  const signedIn = Boolean(userId);
+  const limits = signedIn ? LIMITS_SIGNED_IN[route] : LIMITS_ANON[route];
+  const key = signedIn ? `user:${userId}` : `ip:${getClientIp(req)}`;
+  const tier = signedIn ? 'signedin' : 'anon';
 
-  const perMinute = getLimiter(`${route}:min`, limits.minute, '1 m');
+  const perMinute = getLimiter(`${route}:${tier}:min`, limits.minute, '1 m');
   if (!perMinute) return { ok: true };
 
   const minResult = await perMinute.limit(key);
@@ -81,7 +89,7 @@ export async function checkRateLimit(
     };
   }
 
-  const perDay = getLimiter(`${route}:day`, limits.day, '1 d');
+  const perDay = getLimiter(`${route}:${tier}:day`, limits.day, '1 d');
   if (!perDay) return { ok: true };
 
   const dayResult = await perDay.limit(key);

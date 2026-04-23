@@ -13,10 +13,13 @@ import {
   Play,
   ChevronRight,
   Sparkles,
+  KeyRound,
+  LogOut,
 } from 'lucide-react';
 import { useGameStore } from '@/lib/store/gameStore';
 import { usePlayHistoryStore } from '@/lib/store/playHistoryStore';
 import { getPreferences, savePreferences } from '@/lib/storage';
+import { createClient } from '@/lib/supabase/client';
 
 type AiVoice = 'wizard' | 'plain';
 
@@ -25,10 +28,26 @@ export default function MePage() {
   const { sessions, clearHistory } = usePlayHistoryStore();
   const [confirmClear, setConfirmClear] = useState(false);
   const [voice, setVoice] = useState<AiVoice>('wizard');
+  const [userEmail, setUserEmail] = useState<string | null>(null);
 
   useEffect(() => {
     setVoice(getPreferences().aiVoice ?? 'wizard');
+
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data }) => {
+      setUserEmail(data.user?.email ?? null);
+    });
+    const { data: subscription } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUserEmail(session?.user?.email ?? null);
+    });
+    return () => subscription.subscription.unsubscribe();
   }, []);
+
+  const handleSignOut = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    setUserEmail(null);
+  };
 
   const handleVoiceChange = (next: AiVoice) => {
     setVoice(next);
@@ -80,6 +99,48 @@ export default function MePage() {
           icon={<Play className="w-4 h-4 text-amber-400" />}
         />
       </div>
+
+      {/* Thy Keep — account + sync */}
+      <section className="bg-gradient-to-b from-stone-900/80 to-stone-950/80 border border-amber-900/50 rounded-2xl p-5 shadow-lg shadow-black/20">
+        <div className="flex items-center gap-2 mb-2">
+          <KeyRound className="w-4 h-4 text-amber-400" />
+          <h2 className="text-xs font-serif font-semibold text-amber-200 uppercase tracking-widest">
+            Thy Keep
+          </h2>
+        </div>
+        {userEmail ? (
+          <>
+            <p className="text-amber-100/80 text-sm font-serif mb-1">
+              Signed in as <span className="text-amber-100 font-semibold">{userEmail}</span>
+            </p>
+            <p className="text-[11px] text-amber-200/60 font-serif italic mb-4">
+              Thy library, custom games, and preferences sync across devices.
+            </p>
+            <button
+              type="button"
+              onClick={handleSignOut}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-stone-950/60 hover:bg-stone-900/80 border border-amber-900/50 text-amber-200 font-serif rounded-lg text-sm transition-colors"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>Sign out</span>
+            </button>
+          </>
+        ) : (
+          <>
+            <p className="text-amber-100/80 text-sm font-serif mb-4 leading-relaxed">
+              Sign in to sync thy library across devices. No password required —
+              we&rsquo;ll send a magic link to thy email.
+            </p>
+            <Link
+              href="/auth/sign-in"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-amber-500 hover:bg-amber-400 text-stone-950 font-serif font-semibold rounded-lg text-sm transition-colors"
+            >
+              <KeyRound className="w-4 h-4" />
+              <span>Sign in to sync</span>
+            </Link>
+          </>
+        )}
+      </section>
 
       {/* Quick links */}
       <section className="bg-gradient-to-b from-stone-900/80 to-stone-950/80 border border-amber-900/50 rounded-2xl p-5 shadow-lg shadow-black/20">

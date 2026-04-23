@@ -3,6 +3,7 @@ import { getAnthropic, MODELS } from '@/lib/ai/client';
 import { wizardSystem, type AiVoice } from '@/lib/ai/prompts';
 import { textStreamToResponse } from '@/lib/ai/stream';
 import { checkRateLimit, rateLimitResponse } from '@/lib/rate-limit';
+import { createClient as createSupabaseServerClient } from '@/lib/supabase/server';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -14,7 +15,9 @@ interface ChatRequestBody {
 }
 
 export async function POST(req: NextRequest) {
-  const gate = await checkRateLimit(req, 'chat');
+  const supabase = createSupabaseServerClient();
+  const { data: userData } = await supabase.auth.getUser();
+  const gate = await checkRateLimit(req, 'chat', userData.user?.id ?? null);
   if (!gate.ok) return rateLimitResponse(gate);
 
   let body: ChatRequestBody;

@@ -145,6 +145,53 @@ export type Database = {
           details: any;
         };
       };
+      // Added by supabase/migrations/0001_accounts_and_sync.sql
+      profiles: {
+        Row: {
+          id: string;
+          email: string | null;
+          created_at: string;
+        };
+      };
+      library_games: {
+        Row: {
+          user_id: string;
+          game_id: string;
+          data: any;
+          is_favorite: boolean;
+          added_at: string;
+        };
+        Insert: {
+          user_id: string;
+          game_id: string;
+          data: any;
+          is_favorite?: boolean;
+        };
+      };
+      custom_games: {
+        Row: {
+          user_id: string;
+          id: string;
+          data: any;
+          created_at: string;
+        };
+        Insert: {
+          user_id: string;
+          id: string;
+          data: any;
+        };
+      };
+      user_preferences: {
+        Row: {
+          user_id: string;
+          preferences: any;
+          updated_at: string;
+        };
+        Insert: {
+          user_id: string;
+          preferences: any;
+        };
+      };
     };
   };
 };
