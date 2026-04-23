@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
@@ -12,14 +12,28 @@ import {
   Compass,
   Play,
   ChevronRight,
+  Sparkles,
 } from 'lucide-react';
 import { useGameStore } from '@/lib/store/gameStore';
 import { usePlayHistoryStore } from '@/lib/store/playHistoryStore';
+import { getPreferences, savePreferences } from '@/lib/storage';
+
+type AiVoice = 'wizard' | 'plain';
 
 export default function MePage() {
   const { games, favorites, resetLibrary } = useGameStore();
   const { sessions, clearHistory } = usePlayHistoryStore();
   const [confirmClear, setConfirmClear] = useState(false);
+  const [voice, setVoice] = useState<AiVoice>('wizard');
+
+  useEffect(() => {
+    setVoice(getPreferences().aiVoice ?? 'wizard');
+  }, []);
+
+  const handleVoiceChange = (next: AiVoice) => {
+    setVoice(next);
+    savePreferences({ ...getPreferences(), aiVoice: next });
+  };
 
   const handleClearAll = () => {
     resetLibrary();
@@ -127,6 +141,48 @@ export default function MePage() {
           >
             Terms
           </Link>
+        </div>
+      </section>
+
+      {/* Voice of The Tome */}
+      <section className="bg-gradient-to-b from-stone-900/80 to-stone-950/80 border border-amber-900/50 rounded-2xl p-5 shadow-lg shadow-black/20">
+        <div className="flex items-center gap-2 mb-2">
+          <Sparkles className="w-4 h-4 text-amber-400" />
+          <h2 className="text-xs font-serif font-semibold text-amber-200 uppercase tracking-widest">
+            Voice of The Tome
+          </h2>
+        </div>
+        <p className="text-amber-100/75 text-sm font-serif mb-4 leading-relaxed">
+          Choose how The Tome speaks to thee. The old tongue carries its flavor;
+          plain speech reads quicker at the table.
+        </p>
+        <div className="grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            onClick={() => handleVoiceChange('wizard')}
+            aria-pressed={voice === 'wizard'}
+            className={
+              voice === 'wizard'
+                ? 'px-4 py-3 rounded-xl border text-sm font-serif transition-colors bg-amber-500/20 border-amber-500/60 text-amber-100'
+                : 'px-4 py-3 rounded-xl border text-sm font-serif transition-colors bg-stone-950/50 border-amber-900/40 text-amber-200/70 hover:bg-stone-900/70 hover:text-amber-100'
+            }
+          >
+            <div className="font-semibold">Wizard&rsquo;s Voice</div>
+            <div className="text-[11px] opacity-80 italic mt-0.5">Speaketh in old tongue</div>
+          </button>
+          <button
+            type="button"
+            onClick={() => handleVoiceChange('plain')}
+            aria-pressed={voice === 'plain'}
+            className={
+              voice === 'plain'
+                ? 'px-4 py-3 rounded-xl border text-sm font-serif transition-colors bg-amber-500/20 border-amber-500/60 text-amber-100'
+                : 'px-4 py-3 rounded-xl border text-sm font-serif transition-colors bg-stone-950/50 border-amber-900/40 text-amber-200/70 hover:bg-stone-900/70 hover:text-amber-100'
+            }
+          >
+            <div className="font-semibold">Plain Speech</div>
+            <div className="text-[11px] opacity-80 italic mt-0.5">Modern English, faster to read</div>
+          </button>
         </div>
       </section>
 

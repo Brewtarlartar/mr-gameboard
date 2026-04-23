@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Send, Trash2, Loader2, RotateCcw } from 'lucide-react';
 import { useAIStore } from '@/lib/store/aiStore';
 import { readApiError } from '@/lib/ai/readApiError';
+import { getPreferences } from '@/lib/storage';
 import MarkdownMessage from './MarkdownMessage';
 
 interface Props {
@@ -52,7 +53,11 @@ export default function WizardChatModal({ isOpen, onClose, gameContext, inline =
       const response = await fetch('/api/ai/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: history, gameContext }),
+        body: JSON.stringify({
+          messages: history,
+          gameContext,
+          voice: getPreferences().aiVoice,
+        }),
         signal: controller.signal,
       });
 

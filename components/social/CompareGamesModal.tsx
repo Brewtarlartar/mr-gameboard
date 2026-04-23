@@ -21,6 +21,7 @@ import {
 import { Game } from '@/types/game';
 import { decodeHtmlEntities } from '@/lib/text/decodeHtml';
 import { readApiError } from '@/lib/ai/readApiError';
+import { getPreferences } from '@/lib/storage';
 
 interface CompareGamesModalProps {
   isOpen: boolean;
@@ -134,6 +135,7 @@ CONS:
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           messages: [{ role: 'user', content: userPrompt }],
+          voice: getPreferences().aiVoice,
         }),
       });
 

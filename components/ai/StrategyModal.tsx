@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Wand2, Loader2, Send } from 'lucide-react';
 import { useAIStore } from '@/lib/store/aiStore';
 import { readApiError } from '@/lib/ai/readApiError';
+import { getPreferences } from '@/lib/storage';
 import GamePicker from './GamePicker';
 import MarkdownMessage from './MarkdownMessage';
 
@@ -98,7 +99,12 @@ export default function StrategyModal({
       const response = await fetch('/api/ai/strategy', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ gameName: g, ...(f ? { faction: f } : {}), depth }),
+        body: JSON.stringify({
+          gameName: g,
+          ...(f ? { faction: f } : {}),
+          depth,
+          voice: getPreferences().aiVoice,
+        }),
         signal: controller.signal,
       });
 
@@ -172,7 +178,11 @@ export default function StrategyModal({
       const response = await fetch('/api/ai/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: history, gameContext }),
+        body: JSON.stringify({
+          messages: history,
+          gameContext,
+          voice: getPreferences().aiVoice,
+        }),
         signal: controller.signal,
       });
 

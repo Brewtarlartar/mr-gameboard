@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Loader2, ChevronLeft, ChevronRight, Swords, MessageCircle, Plus, Minus } from 'lucide-react';
 import { useAIStore, teachKey } from '@/lib/store/aiStore';
 import { readApiError } from '@/lib/ai/readApiError';
+import { getPreferences } from '@/lib/storage';
 import type { TeachPlan, TeachPlayer } from '@/lib/ai/types';
 import GamePicker from './GamePicker';
 import MarkdownMessage from './MarkdownMessage';
@@ -138,7 +139,12 @@ export default function TeachMeModal({
       const response = await fetch('/api/ai/teach', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ gameName: g, playerCount, players: normalizedPlayers }),
+        body: JSON.stringify({
+          gameName: g,
+          playerCount,
+          players: normalizedPlayers,
+          voice: getPreferences().aiVoice,
+        }),
         signal: controller.signal,
       });
 
