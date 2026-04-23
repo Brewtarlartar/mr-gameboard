@@ -16,6 +16,7 @@ export interface GameLibrary {
 export interface UserPreferences {
   theme?: string;
   notifications?: boolean;
+  aiVoice?: 'wizard' | 'plain';
 }
 
 // Get all games in library

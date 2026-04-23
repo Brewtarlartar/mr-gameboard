@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { getAnthropic, MODELS } from '@/lib/ai/client';
-import { strategySystem, buildGameContext } from '@/lib/ai/prompts';
+import { strategySystem, buildGameContext, type AiVoice } from '@/lib/ai/prompts';
 import { textStreamToResponse } from '@/lib/ai/stream';
 import { checkRateLimit, rateLimitResponse } from '@/lib/rate-limit';
 
@@ -12,6 +12,7 @@ interface StrategyRequestBody {
   /** Optional — when omitted or empty, returns whole-game strategy. */
   faction?: string;
   depth: 'overview' | 'deep';
+  voice?: AiVoice;
 }
 
 export async function POST(req: NextRequest) {
@@ -25,12 +26,13 @@ export async function POST(req: NextRequest) {
     return new Response('Invalid JSON', { status: 400 });
   }
 
-  const { gameName, faction, depth } = body;
+  const { gameName, faction, depth, voice } = body;
   const gName = typeof gameName === 'string' ? gameName.trim() : '';
   const factionTrimmed = typeof faction === 'string' ? faction.trim() : '';
   if (!gName || (depth !== 'overview' && depth !== 'deep')) {
     return new Response('gameName and depth are required', { status: 400 });
   }
+  const resolvedVoice: AiVoice = voice === 'plain' ? 'plain' : 'wizard';
 
   const context = buildGameContext({
     gameName: gName,
@@ -51,7 +53,7 @@ export async function POST(req: NextRequest) {
   const createParams: Parameters<typeof client.messages.stream>[0] = {
     model,
     max_tokens: depth === 'deep' ? 4096 : 1500,
-    system: strategySystem(depth, { generalGame }),
+    system: strategySystem(depth, { generalGame, voice: resolvedVoice }),
     messages: [{ role: 'user', content: userPrompt }],
   };
 

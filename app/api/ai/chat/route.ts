@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { getAnthropic, MODELS } from '@/lib/ai/client';
-import { wizardSystem } from '@/lib/ai/prompts';
+import { wizardSystem, type AiVoice } from '@/lib/ai/prompts';
 import { textStreamToResponse } from '@/lib/ai/stream';
 import { checkRateLimit, rateLimitResponse } from '@/lib/rate-limit';
 
@@ -10,6 +10,7 @@ export const dynamic = 'force-dynamic';
 interface ChatRequestBody {
   messages: Array<{ role: 'user' | 'assistant'; content: string }>;
   gameContext?: string;
+  voice?: AiVoice;
 }
 
 export async function POST(req: NextRequest) {
@@ -23,10 +24,11 @@ export async function POST(req: NextRequest) {
     return new Response('Invalid JSON', { status: 400 });
   }
 
-  const { messages, gameContext } = body;
+  const { messages, gameContext, voice } = body;
   if (!Array.isArray(messages) || messages.length === 0) {
     return new Response('messages[] is required', { status: 400 });
   }
+  const resolvedVoice: AiVoice = voice === 'plain' ? 'plain' : 'wizard';
 
   const cleaned = messages
     .filter((m) => m && typeof m.content === 'string' && m.content.trim().length > 0)
@@ -50,7 +52,7 @@ export async function POST(req: NextRequest) {
   const stream = client.messages.stream({
     model: MODELS.wizard,
     max_tokens: 1024,
-    system: wizardSystem(),
+    system: wizardSystem(resolvedVoice),
     messages: cleaned,
   });
 
