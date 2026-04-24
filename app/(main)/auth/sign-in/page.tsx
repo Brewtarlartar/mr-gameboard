@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
@@ -9,18 +8,17 @@ import { ChevronLeft, Loader2, Mail } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
 export default function SignInPage() {
-  const searchParams = useSearchParams();
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    const urlError = searchParams.get('error');
+    const urlError = new URLSearchParams(window.location.search).get('error');
     if (urlError) {
       setStatus('error');
       setErrorMessage(urlError);
     }
-  }, [searchParams]);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
