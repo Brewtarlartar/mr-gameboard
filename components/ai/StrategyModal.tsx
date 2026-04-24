@@ -456,6 +456,10 @@ export default function StrategyModal({
 
   if (inline) {
     const popupOpen = isOpen && (isStreaming || !!content || !!error);
+    const closePopup = () => {
+      handleReset();
+      onClose();
+    };
 
     const popupNode = (
       <AnimatePresence>
@@ -466,7 +470,7 @@ export default function StrategyModal({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[10050] bg-black/75 backdrop-blur-sm flex items-stretch justify-center sm:items-center sm:p-4"
-            onClick={handleReset}
+            onClick={closePopup}
             style={{
               paddingTop: 'calc(env(safe-area-inset-top, 0px) + 12px)',
               paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 84px)',
@@ -480,7 +484,7 @@ export default function StrategyModal({
               className="w-full sm:max-w-2xl sm:h-[82vh] rounded-2xl bg-stone-900 border border-amber-900/50 shadow-2xl shadow-amber-950/40 flex flex-col overflow-hidden"
               onClick={(e) => e.stopPropagation()}
             >
-              {renderHeader(handleReset, 'Close result')}
+              {renderHeader(closePopup, 'Close result')}
               {resultSection}
               {followUpSection}
             </motion.div>
