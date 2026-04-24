@@ -18,6 +18,7 @@ interface Props {
   onClose: () => void;
   inline?: boolean;
   initialGameName?: string;
+  initialBggId?: number;
   lockedGame?: boolean;
   initialPlayerCount?: number;
 }
@@ -30,6 +31,7 @@ export default function TeachMeModal({
   onClose,
   inline = false,
   initialGameName,
+  initialBggId,
   lockedGame = false,
   initialPlayerCount,
 }: Props) {
@@ -143,6 +145,7 @@ export default function TeachMeModal({
           gameName: g,
           playerCount,
           players: normalizedPlayers,
+          ...(initialBggId ? { bggId: initialBggId } : {}),
           voice: getPreferences().aiVoice,
         }),
         signal: controller.signal,
@@ -454,6 +457,8 @@ export default function TeachMeModal({
           isOpen={wizardOpen}
           onClose={() => setWizardOpen(false)}
           gameContext={gameContextForWizard}
+          bggId={initialBggId}
+          gameName={gameName || undefined}
         />
       </>
     );
@@ -489,6 +494,8 @@ export default function TeachMeModal({
         isOpen={wizardOpen}
         onClose={() => setWizardOpen(false)}
         gameContext={gameContextForWizard}
+        bggId={initialBggId}
+        gameName={gameName || undefined}
       />
     </>
   );

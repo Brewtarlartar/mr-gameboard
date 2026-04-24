@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { getAnthropic, MODELS } from '@/lib/ai/client';
 import { teachSystem, buildGameContext, type AiVoice } from '@/lib/ai/prompts';
+import { buildHydratedGameContext } from '@/lib/ai/gameContext';
 import type { TeachPlan, TeachChapter, TeachPlayer } from '@/lib/ai/types';
 import { checkRateLimit, rateLimitResponse } from '@/lib/rate-limit';
 import { createClient as createSupabaseServerClient } from '@/lib/supabase/server';
@@ -13,6 +14,7 @@ interface TeachRequestBody {
   playerCount: number;
   players: TeachPlayer[];
   voice?: AiVoice;
+  bggId?: number;
 }
 
 function extractJson(text: string): TeachPlan | null {
@@ -54,7 +56,7 @@ export async function POST(req: NextRequest) {
     return new Response('Invalid JSON', { status: 400 });
   }
 
-  const { gameName, playerCount, players, voice } = body;
+  const { gameName, playerCount, players, voice, bggId } = body;
   if (!gameName || !playerCount || !Array.isArray(players) || players.length === 0) {
     return new Response('gameName, playerCount, and players[] are required', {
       status: 400,
@@ -62,7 +64,9 @@ export async function POST(req: NextRequest) {
   }
   const resolvedVoice: AiVoice = voice === 'plain' ? 'plain' : 'wizard';
 
-  const context = buildGameContext({ gameName, playerCount, players });
+  const extras = { gameName, playerCount, players };
+  const hydrated = bggId ? await buildHydratedGameContext(supabase, bggId, extras) : null;
+  const context = hydrated || buildGameContext(extras);
   const userPrompt = `${context}\n\nTeach this specific group how to play. Return only the JSON object described in the system prompt.`;
 
   const client = getAnthropic();

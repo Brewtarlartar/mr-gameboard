@@ -7,13 +7,19 @@
  * Can be run manually or via cron job.
  * 
  * Usage:
- *   node scripts/sync-bgg-cache.js                    # Sync top 25,000 games
+ *   node scripts/sync-bgg-cache.js                    # Sync top 25,000 games WITH rulebook URLs (slow, ~6–8 hr)
+ *   node scripts/sync-bgg-cache.js --skip-rulebooks   # Sync top 25,000 games, no rulebook fetches (~1 hr)
  *   node scripts/sync-bgg-cache.js --limit 5000       # Sync top 5,000 games
- *   node scripts/sync-bgg-cache.js --resume           # Resume from last sync
- * 
+ *   node scripts/sync-bgg-cache.js --resume           # Resume from last sync (skip already-cached IDs)
+ *
+ * Recommended first run:
+ *   node scripts/sync-bgg-cache.js --limit 100 --skip-rulebooks
+ *   (smoke test — confirms auth + DB wiring before committing to the long run)
+ *
  * Requirements:
- *   - NEXT_PUBLIC_SUPABASE_URL in .env
- *   - SUPABASE_SERVICE_ROLE_KEY in .env
+ *   - NEXT_PUBLIC_SUPABASE_URL in .env.local
+ *   - SUPABASE_SERVICE_ROLE_KEY in .env.local
+ *   - BGG_API_TOKEN optional — if set, used for Authorization: Bearer
  */
 
 require('dotenv').config({ path: '.env.local' });
@@ -30,6 +36,7 @@ const args = process.argv.slice(2);
 const limitIndex = args.indexOf('--limit');
 const GAME_LIMIT = limitIndex !== -1 ? parseInt(args[limitIndex + 1]) : DEFAULT_LIMIT;
 const RESUME_MODE = args.includes('--resume');
+const SKIP_RULEBOOKS = args.includes('--skip-rulebooks');
 
 // Supabase client with service role (bypasses RLS)
 const supabase = createClient(
@@ -81,20 +88,67 @@ function decodeHTMLEntities(text) {
     .trim();
 }
 
+// BGG's HTML browse pages 403 anonymous non-browser UAs, so we mimic Chrome
+// here. If BGG issues a Bearer token via their commercial-approval program,
+// attach it too — it won't hurt the HTML pages and it authenticates the
+// XML API calls.
+function bggAuthHeaders() {
+  const token = (process.env.BGG_API_TOKEN || '').trim();
+  const base = {
+    'Accept': 'application/xml, text/xml, text/html, */*',
+    'User-Agent':
+      process.env.BGG_USER_AGENT ||
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'Accept-Language': 'en-US,en;q=0.9',
+    'Accept-Encoding': 'gzip, deflate, br',
+    'Connection': 'keep-alive',
+    'Cache-Control': 'no-cache',
+    'Pragma': 'no-cache',
+  };
+  if (token) base.Authorization = `Bearer ${token}`;
+  return base;
+}
+
+// Fetch the highest-downloaded rulebook PDF URL from BGG's files endpoint.
+// Returns null if none found or the request fails — the API route already
+// falls back to the BGG files page and then a web search URL.
+async function fetchRulebookUrl(bggId) {
+  try {
+    const res = await axios.get(`${BGG_API_BASE}/files?id=${bggId}`, {
+      headers: bggAuthHeaders(),
+      timeout: 15000,
+    });
+    const xml = res.data || '';
+    if (typeof xml !== 'string' || xml.includes('<error>') || xml.includes('Rate limit')) {
+      return null;
+    }
+    const fileRe = /<file\b[^>]*>([\s\S]*?)<\/file>/gi;
+    let best = null;
+    let m;
+    while ((m = fileRe.exec(xml)) !== null) {
+      const inner = m[1];
+      const cat = inner.match(/<category[^>]*value="([^"]*)"/i);
+      if (!cat || !cat[1].toLowerCase().includes('rule')) continue;
+      const urlMatch = inner.match(/<url>([\s\S]*?)<\/url>/i);
+      if (!urlMatch) continue;
+      const dl = inner.match(/<downloads>(\d+)<\/downloads>/i);
+      const downloads = dl ? parseInt(dl[1], 10) : 0;
+      const url = urlMatch[1].trim();
+      if (!url) continue;
+      if (!best || downloads > best.downloads) best = { url, downloads };
+    }
+    return best ? best.url : null;
+  } catch (err) {
+    return null;
+  }
+}
+
 // Fetch game details batch from BGG
 async function fetchGameBatch(ids) {
   const url = `${BGG_API_BASE}/thing?id=${ids.join(',')}&stats=1`;
-  
+
   const response = await axios.get(url, {
-    headers: { 
-      'Accept': 'application/xml, text/xml, */*',
-      'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-      'Accept-Language': 'en-US,en;q=0.9',
-      'Accept-Encoding': 'gzip, deflate, br',
-      'Connection': 'keep-alive',
-      'Cache-Control': 'no-cache',
-      'Pragma': 'no-cache'
-    },
+    headers: bggAuthHeaders(),
     timeout: 30000
   });
   
@@ -158,6 +212,7 @@ async function fetchGameBatch(ids) {
       designers,
       artists,
       publishers,
+      rulebook_url: null,
       last_synced_at: new Date().toISOString(),
     });
   }
@@ -177,7 +232,10 @@ async function fetchTopGameIds(limit, startPage = 1) {
     try {
       process.stdout.write(`  Page ${page}/${pages + startPage - 1}... `);
       
-      const response = await axios.get(`https://boardgamegeek.com/browse/boardgame/page/${page}`);
+      const response = await axios.get(
+        `https://boardgamegeek.com/browse/boardgame/page/${page}`,
+        { headers: bggAuthHeaders() },
+      );
       const html = response.data;
       
       const idRegex = /\/boardgame\/(\d+)\//g;
@@ -224,6 +282,8 @@ async function syncBGGCache() {
   console.log('='.repeat(50));
   console.log(`Target: ${GAME_LIMIT.toLocaleString()} games`);
   console.log(`Mode: ${RESUME_MODE ? 'Resume (skip existing)' : 'Full sync'}`);
+  console.log(`Rulebook URLs: ${SKIP_RULEBOOKS ? 'SKIPPED (fast)' : 'included (slow)'}`);
+  console.log(`BGG auth: ${process.env.BGG_API_TOKEN ? 'token' : 'anonymous'}`);
   console.log('='.repeat(50));
   
   // Create sync log
@@ -309,22 +369,31 @@ async function syncBGGCache() {
       
       try {
         const games = await fetchGameBatch(batchIds);
-        
+
         for (const game of games) {
+          // Fetch rulebook URL per game (separate BGG endpoint). Small sleep
+          // between file fetches keeps us well under BGG's rate threshold.
+          // Skip entirely with --skip-rulebooks to cut runtime ~6x.
+          if (!SKIP_RULEBOOKS) {
+            const rulebookUrl = await fetchRulebookUrl(game.bgg_id);
+            if (rulebookUrl) game.rulebook_url = rulebookUrl;
+            await sleep(400);
+          }
+
           const { error } = await supabase
             .from('bgg_games_cache')
             .upsert(game, { onConflict: 'bgg_id' });
-          
+
           if (error) {
             gamesFailed++;
           } else {
             gamesSynced++;
           }
         }
-        
-        // Rate limit
+
+        // Rate limit between thing batches
         await sleep(RATE_LIMIT_MS);
-        
+
       } catch (error) {
         console.error(`\nBatch error: ${error.message}`);
         if (error.response) {

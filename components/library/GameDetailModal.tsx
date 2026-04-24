@@ -25,6 +25,7 @@ import {
 import { SeedGame } from '@/types/seedGame';
 import { useGameStore } from '@/lib/store/gameStore';
 import { useWishlistStore } from '@/lib/store/wishlistStore';
+import { rulebookUrlWithFallback } from '@/lib/bgg/api';
 
 interface BGGComment {
   username: string;
@@ -356,6 +357,22 @@ export default function GameDetailModal({
                         </button>
                       </>
                     )}
+
+                    <button
+                      onClick={() => {
+                        const bggIdNum = game.bggId ? parseInt(game.bggId, 10) : null;
+                        const url = rulebookUrlWithFallback(
+                          Number.isFinite(bggIdNum) ? bggIdNum : null,
+                          displayData.name || game.title,
+                          null,
+                        );
+                        window.open(url, '_blank', 'noopener,noreferrer');
+                      }}
+                      className="col-span-2 flex items-center justify-center gap-2 px-4 py-2.5 bg-amber-600/15 hover:bg-amber-600/25 border border-amber-500/40 text-amber-100 rounded-lg font-serif font-semibold text-sm transition-colors"
+                    >
+                      <BookOpen className="w-4 h-4" />
+                      Rulebook
+                    </button>
 
                     <button
                       onClick={() => {

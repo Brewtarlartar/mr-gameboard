@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { getAnthropic, MODELS } from '@/lib/ai/client';
 import { strategySystem, buildGameContext, type AiVoice } from '@/lib/ai/prompts';
+import { buildHydratedGameContext } from '@/lib/ai/gameContext';
 import { textStreamToResponse } from '@/lib/ai/stream';
 import { checkRateLimit, rateLimitResponse } from '@/lib/rate-limit';
 import { createClient as createSupabaseServerClient } from '@/lib/supabase/server';
@@ -14,6 +15,7 @@ interface StrategyRequestBody {
   faction?: string;
   depth: 'overview' | 'deep';
   voice?: AiVoice;
+  bggId?: number;
 }
 
 export async function POST(req: NextRequest) {
@@ -29,7 +31,7 @@ export async function POST(req: NextRequest) {
     return new Response('Invalid JSON', { status: 400 });
   }
 
-  const { gameName, faction, depth, voice } = body;
+  const { gameName, faction, depth, voice, bggId } = body;
   const gName = typeof gameName === 'string' ? gameName.trim() : '';
   const factionTrimmed = typeof faction === 'string' ? faction.trim() : '';
   if (!gName || (depth !== 'overview' && depth !== 'deep')) {
@@ -37,10 +39,12 @@ export async function POST(req: NextRequest) {
   }
   const resolvedVoice: AiVoice = voice === 'plain' ? 'plain' : 'wizard';
 
-  const context = buildGameContext({
+  const extras = {
     gameName: gName,
     ...(factionTrimmed ? { faction: factionTrimmed } : {}),
-  });
+  };
+  const hydrated = bggId ? await buildHydratedGameContext(supabase, bggId, extras) : null;
+  const context = hydrated || buildGameContext(extras);
   const generalGame = !factionTrimmed;
   const userPrompt = generalGame
     ? depth === 'overview'

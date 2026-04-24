@@ -30,6 +30,7 @@ export interface BggCacheRow {
   designers: string[];
   artists: string[];
   publishers: string[];
+  rulebook_url: string | null;
   last_synced_at: string;
 }
 
@@ -208,8 +209,113 @@ export function parseBggThingXml(bggId: number, xml: string): BggCacheRow | null
     designers: collectLinks(xml, 'boardgamedesigner'),
     artists: collectLinks(xml, 'boardgameartist'),
     publishers: collectLinks(xml, 'boardgamepublisher'),
+    rulebook_url: null,
     last_synced_at: new Date().toISOString(),
   };
+}
+
+/**
+ * Fetch the top rulebook PDF URL for a game from BGG's `/files` endpoint.
+ * Picks the file whose category matches "rules" with the highest download
+ * count. Returns null if no rulebook file is found or the request fails —
+ * callers should fall back to the BGG files landing page or a web search URL.
+ */
+export async function fetchBggRulebookUrl(
+  bggId: number,
+  opts: { timeoutMs?: number } = {},
+): Promise<string | null> {
+  try {
+    const res = await fetchWithTimeout(
+      `${BGG_BASE}/files?id=${bggId}`,
+      opts.timeoutMs ?? 6000,
+    );
+    if (!res.ok) return null;
+    const xml = await res.text();
+    if (xml.includes('<error>') || xml.includes('Rate limit')) return null;
+
+    // Each <file>...</file> block has a <category value="rules"/> tag, a
+    // <downloads>NNN</downloads> count, and a <url>...</url>.
+    const fileRe = /<file\b[^>]*>([\s\S]*?)<\/file>/gi;
+    let best: { url: string; downloads: number } | null = null;
+    let m: RegExpExecArray | null;
+    while ((m = fileRe.exec(xml)) !== null) {
+      const inner = m[1];
+      const category = inner.match(/<category[^>]*value="([^"]*)"/i);
+      if (!category) continue;
+      const cat = category[1].toLowerCase();
+      if (!cat.includes('rule')) continue;
+
+      const urlMatch = inner.match(/<url>([\s\S]*?)<\/url>/i);
+      if (!urlMatch) continue;
+      const downloadsMatch = inner.match(/<downloads>(\d+)<\/downloads>/i);
+      const downloads = downloadsMatch ? parseInt(downloadsMatch[1], 10) : 0;
+      const url = urlMatch[1].trim();
+      if (!url) continue;
+
+      if (!best || downloads > best.downloads) {
+        best = { url, downloads };
+      }
+    }
+
+    return best ? best.url : null;
+  } catch (err) {
+    console.warn(`[BGG] files ${bggId} fetch failed:`, err);
+    return null;
+  }
+}
+
+/**
+ * Tiered fallback for rulebook URLs. Prefers the stored direct PDF; falls
+ * back to the BGG files landing page; finally a Google search so clicking
+ * the button is always useful, even for games that haven't been synced.
+ */
+export function rulebookUrlWithFallback(
+  bggId: number | null | undefined,
+  gameName: string | null | undefined,
+  stored: string | null | undefined,
+): string {
+  if (stored && stored.trim()) return stored.trim();
+  if (bggId) return `https://boardgamegeek.com/boardgame/${bggId}/files`;
+  const q = encodeURIComponent(`${gameName || 'board game'} rulebook filetype:pdf`);
+  return `https://www.google.com/search?q=${q}`;
+}
+
+/**
+ * Fetch multiple games in a single BGG `thing` call. IDs are comma-joined
+ * (BGG accepts up to ~20 per request). Returns the parsed rows in the order
+ * the response emitted them; missing/failed entries are simply absent.
+ */
+export async function fetchBggThingsBatch(
+  ids: number[],
+  opts: { timeoutMs?: number } = {},
+): Promise<BggCacheRow[]> {
+  const cleanIds = ids.filter((n) => Number.isFinite(n) && n > 0);
+  if (cleanIds.length === 0) return [];
+  try {
+    const res = await fetchWithTimeout(
+      `${BGG_BASE}/thing?id=${cleanIds.join(',')}&stats=1`,
+      opts.timeoutMs ?? 15000,
+    );
+    if (!res.ok) {
+      console.warn(`[BGG] batch thing -> HTTP ${res.status}`);
+      return [];
+    }
+    const xml = await res.text();
+    if (xml.includes('<error>') || xml.includes('Rate limit')) return [];
+
+    const rows: BggCacheRow[] = [];
+    const itemRe = /<item\s+[^>]*id="(\d+)"[^>]*>([\s\S]*?)<\/item>/gi;
+    let m: RegExpExecArray | null;
+    while ((m = itemRe.exec(xml)) !== null) {
+      const id = parseInt(m[1], 10);
+      const row = parseBggThingXml(id, `<item id="${id}">${m[2]}</item>`);
+      if (row) rows.push(row);
+    }
+    return rows;
+  } catch (err) {
+    console.warn(`[BGG] batch thing fetch failed:`, err);
+    return [];
+  }
 }
 
 /**

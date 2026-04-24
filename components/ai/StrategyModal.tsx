@@ -19,6 +19,7 @@ interface Props {
   initialDepth?: 'overview' | 'deep';
   inline?: boolean;
   initialGameName?: string;
+  initialBggId?: number;
   lockedGame?: boolean;
 }
 
@@ -28,6 +29,7 @@ export default function StrategyModal({
   initialDepth = 'overview',
   inline = false,
   initialGameName,
+  initialBggId,
   lockedGame = false,
 }: Props) {
   const { saveStrategy, getStrategy } = useAIStore();
@@ -102,6 +104,7 @@ export default function StrategyModal({
         body: JSON.stringify({
           gameName: g,
           ...(f ? { faction: f } : {}),
+          ...(initialBggId ? { bggId: initialBggId } : {}),
           depth,
           voice: getPreferences().aiVoice,
         }),
@@ -181,6 +184,8 @@ export default function StrategyModal({
         body: JSON.stringify({
           messages: history,
           gameContext,
+          ...(initialBggId ? { bggId: initialBggId } : {}),
+          ...(g ? { gameName: g } : {}),
           voice: getPreferences().aiVoice,
         }),
         signal: controller.signal,

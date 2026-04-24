@@ -205,6 +205,8 @@ export default function PlayModeAssistant({
         isOpen={wizardOpen}
         onClose={() => setWizardOpen(false)}
         gameContext={wizardGameContext}
+        bggId={game.bggId}
+        gameName={game.name}
       />
     </div>
   );
