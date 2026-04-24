@@ -13,10 +13,19 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   gameContext?: string;
+  bggId?: number;
+  gameName?: string;
   inline?: boolean;
 }
 
-export default function WizardChatModal({ isOpen, onClose, gameContext, inline = false }: Props) {
+export default function WizardChatModal({
+  isOpen,
+  onClose,
+  gameContext,
+  bggId,
+  gameName,
+  inline = false,
+}: Props) {
   const { wizardMessages, appendWizardMessage, updateLastAssistantMessage, clearWizard } = useAIStore();
   const [input, setInput] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
@@ -56,6 +65,8 @@ export default function WizardChatModal({ isOpen, onClose, gameContext, inline =
         body: JSON.stringify({
           messages: history,
           gameContext,
+          ...(bggId ? { bggId } : {}),
+          ...(gameName ? { gameName } : {}),
           voice: getPreferences().aiVoice,
         }),
         signal: controller.signal,

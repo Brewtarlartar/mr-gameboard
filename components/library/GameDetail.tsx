@@ -28,7 +28,9 @@ import {
 import { createPortal } from 'react-dom';
 import { Game, Player } from '@/types/game';
 import { cn } from '@/lib/utils';
+import { rulebookUrlWithFallback } from '@/lib/bgg/api';
 import { decodeHtmlEntities } from '@/lib/text/decodeHtml';
+import BggAttribution from '@/components/ui/BggAttribution';
 import { usePlaySessionStore } from '@/lib/store/playSessionStore';
 import { buildGameContext } from '@/lib/ai/prompts';
 import WizardChatModal from '@/components/ai/WizardChatModal';
@@ -201,6 +203,7 @@ export default function GameDetail({
   const displayDescription = liveDescription || game.description;
   const cleanedDescription = displayDescription ? cleanDescription(displayDescription) : null;
   const amazonUrl = getAmazonSearchUrl(game.name);
+  const rulebookUrl = rulebookUrlWithFallback(game.bggId, game.name, game.rulebookUrl);
 
   const modalContent = (
     <AnimatePresence>
@@ -432,6 +435,8 @@ export default function GameDetail({
                                 isOpen={isActive}
                                 onClose={closePanel}
                                 gameContext={gameContext}
+                                bggId={game.bggId}
+                                gameName={game.name}
                               />
                             )}
                             {(card.id === 'overview' || card.id === 'deep') && (
@@ -441,6 +446,7 @@ export default function GameDetail({
                                 onClose={closePanel}
                                 initialDepth={card.id === 'deep' ? 'deep' : 'overview'}
                                 initialGameName={game.name}
+                                initialBggId={game.bggId}
                                 lockedGame
                               />
                             )}
@@ -450,6 +456,7 @@ export default function GameDetail({
                                 isOpen={isActive}
                                 onClose={closePanel}
                                 initialGameName={game.name}
+                                initialBggId={game.bggId}
                                 lockedGame
                               />
                             )}
@@ -537,6 +544,18 @@ export default function GameDetail({
 
                   {/* External links */}
                   <section className="grid grid-cols-2 gap-2 sm:gap-3 pt-2 border-t border-amber-900/30">
+                    {rulebookUrl && (
+                      <a
+                        href={rulebookUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="col-span-2 flex items-center justify-center gap-2 px-4 py-2.5 bg-amber-600/15 hover:bg-amber-600/25 border border-amber-500/40 text-amber-100 rounded-lg font-serif font-semibold text-sm transition-colors"
+                      >
+                        <BookOpen className="w-4 h-4" />
+                        <span>Rulebook</span>
+                      </a>
+                    )}
+
                     <a
                       href={amazonUrl}
                       target="_blank"
@@ -577,6 +596,10 @@ export default function GameDetail({
                       </button>
                     )}
                   </section>
+
+                  <div className="pt-3 text-center">
+                    <BggAttribution />
+                  </div>
                 </div>
               </div>
             </motion.div>

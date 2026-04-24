@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { ChevronLeft, Scroll } from 'lucide-react';
+import BggAttribution from '@/components/ui/BggAttribution';
 
 export default function TermsPage() {
   return (
@@ -60,6 +61,13 @@ export default function TermsPage() {
           their respective publishers and BoardGameGeek contributors. The Tome
           displays this information for reference; it does not claim ownership.
         </p>
+        <p>
+          Game data is sourced from BoardGameGeek&apos;s XML API under a
+          commercial license.
+        </p>
+        <div className="pt-2">
+          <BggAttribution size="md" />
+        </div>
       </section>
 
       <section className="bg-gradient-to-b from-stone-900/80 to-stone-950/80 border border-amber-900/50 rounded-2xl p-5 space-y-3 text-amber-100/85 text-sm font-serif leading-relaxed">

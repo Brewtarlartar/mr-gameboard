@@ -14,7 +14,8 @@ const STYLE_RULES = `Style rules:
 - Answer the actual question first, in one or two sentences. Details after.
 - Cite the specific rule or mechanic when settling a rules debate, so the table knows you are not guessing.
 - If a rule is commonly misunderstood or varies by edition, say so and state the official ruling.
-- If you do not truly know a specific game, say so plainly — invent no rules. Suggest the rulebook page or BGG forum.
+- When game metadata (summary, mechanics, categories, complexity) is provided below, treat it as authoritative context alongside your training knowledge — reason from it, even if the exact title is unfamiliar. Do not refuse to engage with a game just because the name is new to you.
+- If neither the provided context nor your training covers the specific rule being asked about, say so plainly and point to the rulebook — but do not invent rules.
 - Use short paragraphs and bullet lists. Markdown is rendered. Avoid headings unless the response is long.
 - Never lecture. No "Great question!" No disclaimers. Just the answer.
 - Keep the reading level at the table: clear, specific, no jargon beyond the game itself.
@@ -140,16 +141,59 @@ Rules:
   ];
 }
 
+const DESCRIPTION_CHAR_LIMIT = 1500;
+
+function truncateDescription(text: string): string {
+  if (text.length <= DESCRIPTION_CHAR_LIMIT) return text;
+  const truncated = text.slice(0, DESCRIPTION_CHAR_LIMIT);
+  const lastBreak = Math.max(truncated.lastIndexOf('. '), truncated.lastIndexOf('\n'));
+  const cutoff = lastBreak > DESCRIPTION_CHAR_LIMIT * 0.6 ? lastBreak + 1 : DESCRIPTION_CHAR_LIMIT;
+  return `${truncated.slice(0, cutoff).trim()}…`;
+}
+
 export function buildGameContext(opts: {
   gameName?: string;
   faction?: string;
   playerCount?: number;
   players?: Array<{ name: string; faction?: string }>;
+  description?: string | null;
+  mechanics?: string[] | null;
+  categories?: string[] | null;
+  complexity?: number | null;
+  minPlayers?: number | null;
+  maxPlayers?: number | null;
+  playingTime?: number | null;
+  yearPublished?: number | null;
 }): string {
   const lines: string[] = [];
   if (opts.gameName) lines.push(`Game: ${opts.gameName}`);
+  if (opts.yearPublished) lines.push(`Year: ${opts.yearPublished}`);
+
+  const playerRange =
+    opts.minPlayers && opts.maxPlayers
+      ? opts.minPlayers === opts.maxPlayers
+        ? `${opts.minPlayers}`
+        : `${opts.minPlayers}–${opts.maxPlayers}`
+      : null;
+  if (playerRange) lines.push(`Supports: ${playerRange} players`);
+  if (opts.playingTime) lines.push(`Typical length: ${opts.playingTime} minutes`);
+  if (typeof opts.complexity === 'number' && opts.complexity > 0) {
+    lines.push(`Complexity (BGG weight): ${opts.complexity.toFixed(2)}/5`);
+  }
+  if (opts.categories && opts.categories.length) {
+    lines.push(`Categories: ${opts.categories.slice(0, 8).join(', ')}`);
+  }
+  if (opts.mechanics && opts.mechanics.length) {
+    lines.push(`Mechanics: ${opts.mechanics.slice(0, 12).join(', ')}`);
+  }
+  if (opts.description && opts.description.trim().length > 0) {
+    lines.push('');
+    lines.push('Summary (from BoardGameGeek):');
+    lines.push(truncateDescription(opts.description.trim()));
+  }
+
   if (opts.faction) lines.push(`Faction/role: ${opts.faction}`);
-  if (opts.playerCount) lines.push(`Player count: ${opts.playerCount}`);
+  if (opts.playerCount) lines.push(`Player count this session: ${opts.playerCount}`);
   if (opts.players && opts.players.length) {
     lines.push('Players:');
     for (const p of opts.players) {

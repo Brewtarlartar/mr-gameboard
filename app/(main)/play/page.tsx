@@ -288,6 +288,7 @@ export default function PlayModePage() {
         isOpen={teachOpen}
         onClose={() => setTeachOpen(false)}
         initialGameName={selectedGame?.name}
+        initialBggId={selectedGame?.bggId}
         lockedGame={!!selectedGame}
         initialPlayerCount={players.length || undefined}
       />

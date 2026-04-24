@@ -3,6 +3,7 @@
 
 import { createClient } from '@/lib/supabase/client';
 import { GameSearchResult, GameDetail } from '@/types/game';
+import { rulebookUrlWithFallback } from '@/lib/bgg/api';
 
 // Create a server-side Supabase client for API routes
 const getSupabaseClient = () => {
@@ -38,6 +39,7 @@ export interface CachedGame {
   designers: string[];
   artists: string[];
   publishers: string[];
+  rulebook_url: string | null;
   last_synced_at: string;
 }
 
@@ -63,7 +65,7 @@ function toGameDetail(cached: CachedGame): GameDetail {
     genres: cached.categories || [], // Alias for categories
     designers: cached.designers || [],
     artists: cached.artists || [],
-    rulebookUrl: `https://boardgamegeek.com/boardgame/${cached.bgg_id}/files`,
+    rulebookUrl: rulebookUrlWithFallback(cached.bgg_id, cached.name, cached.rulebook_url),
   };
 }
 

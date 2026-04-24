@@ -9,6 +9,7 @@ import {
   getSearchHistory,
   clearSearchHistory,
 } from '@/lib/agents/library/search';
+import BggAttribution from '@/components/ui/BggAttribution';
 
 interface GameSearchResult {
   id: number;
@@ -208,6 +209,9 @@ export default function GameSearch({ onSelectGame }: GameSearchProps) {
                   </span>
                 </button>
               ))}
+              <div className="px-4 py-2 border-t border-amber-900/30 text-center">
+                <BggAttribution />
+              </div>
             </div>
           )}
         </div>

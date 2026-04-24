@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getGameDetails } from '@/lib/bgg';
-import { fetchBggThing, hasBggToken, type BggCacheRow } from '@/lib/bgg/api';
+import {
+  fetchBggThing,
+  hasBggToken,
+  rulebookUrlWithFallback,
+  type BggCacheRow,
+} from '@/lib/bgg/api';
 import { getStapleGames } from '@/lib/games/staples';
 import { GameDetail } from '@/types/game';
 
@@ -81,7 +86,7 @@ function rowToDetail(row: BggCacheRow): GameDetail {
     genres: row.categories || [],
     designers: row.designers || [],
     artists: row.artists || [],
-    rulebookUrl: `https://boardgamegeek.com/boardgame/${row.bgg_id}/files`,
+    rulebookUrl: rulebookUrlWithFallback(row.bgg_id, row.name, row.rulebook_url),
   };
 }
 
