@@ -206,5 +206,6 @@ export async function clearAllServerData(): Promise<void> {
     supabase.from('library_games').delete().eq('user_id', userId),
     supabase.from('custom_games').delete().eq('user_id', userId),
     supabase.from('user_preferences').delete().eq('user_id', userId),
+    supabase.from('wizard_conversations').delete().eq('user_id', userId),
   ]);
 }
