@@ -80,8 +80,12 @@ export async function POST(req: NextRequest) {
       ...cleaned.slice(1).map((m) => ({ role: m.role, content: m.content })),
     ];
 
+    // When a rulebook PDF is attached, route to Sonnet (overview model)
+    // rather than Haiku. Haiku 4.5 caps PDF documents at 100 pages and
+    // Anthropic 400s on anything larger; Sonnet 4.6 accepts up to 600.
+    // Cost is small for personal use and answers are better-grounded.
     const stream = client.beta.messages.stream({
-      model: MODELS.wizard,
+      model: MODELS.overview,
       max_tokens: 1024,
       system: wizardSystem(resolvedVoice, true),
       messages: betaMessages,

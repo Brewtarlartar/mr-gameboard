@@ -1,18 +1,23 @@
 /**
- * Download a rulebook PDF from a URL with safety checks.
+ * Download a rulebook PDF from a URL — or read one from local disk —
+ * with safety checks.
  *
- * - HEAD probe: only proceed if Content-Type is application/pdf (BGG often
- *   returns HTML files-listing pages instead of the actual PDF).
- * - Size cap: refuse anything over MAX_PDF_BYTES (Anthropic Files supports
- *   500MB; we cap lower because real rulebooks are tiny in comparison and
- *   anything bigger is almost certainly the wrong file).
+ * - HEAD probe (URL only): only proceed if Content-Type is application/pdf
+ *   (BGG often returns HTML files-listing pages instead of the actual PDF).
+ * - Size cap: refuse anything over MAX_PDF_BYTES. Stonemaier's larger
+ *   "Complete Rulebook" PDFs run ~58 MB; Anthropic Files supports 500 MB,
+ *   but we cap at 100 MB to flag mistakes early.
+ * - PDF magic-byte check: rejects anything that isn't actually a PDF.
  *
  * Returns the buffer + bytes on success, or a structured error string we
  * can persist to bgg_games_cache.rulebook_upload_error for debugging.
  */
 
-const MAX_PDF_BYTES = 32 * 1024 * 1024; // 32 MB
-const FETCH_TIMEOUT_MS = 30_000;
+import { readFile } from 'node:fs/promises';
+import path from 'node:path';
+
+const MAX_PDF_BYTES = 100 * 1024 * 1024; // 100 MB
+const FETCH_TIMEOUT_MS = 60_000;
 
 export type RulebookFetchResult =
   | { ok: true; buffer: Buffer; bytes: number; contentType: string }
@@ -82,4 +87,36 @@ export async function fetchRulebookPdf(url: string): Promise<RulebookFetchResult
   }
 
   return { ok: true, buffer, bytes: buffer.length, contentType };
+}
+
+/**
+ * Load a rulebook PDF from local disk. Used for publisher PDFs that
+ * aren't directly hostable (Stonemaier Dropbox, files behind login pages).
+ * Pre-warm runs locally, so this only matters on the dev machine.
+ *
+ * filePath may be absolute or relative to the project root (CWD when the
+ * Next.js server is running). Spaces and parens are tolerated.
+ */
+export async function loadLocalRulebookPdf(filePath: string): Promise<RulebookFetchResult> {
+  if (!filePath || typeof filePath !== 'string') {
+    return { ok: false, error: 'invalid_file_path' };
+  }
+  const abs = path.isAbsolute(filePath) ? filePath : path.resolve(process.cwd(), filePath);
+
+  let buffer: Buffer;
+  try {
+    buffer = await readFile(abs);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'unknown';
+    return { ok: false, error: `read_failed: ${msg}`.slice(0, 200) };
+  }
+
+  if (buffer.length > MAX_PDF_BYTES) {
+    return { ok: false, error: `too_large: ${buffer.length} bytes` };
+  }
+  if (buffer.length < 5 || buffer.subarray(0, 5).toString('ascii') !== '%PDF-') {
+    return { ok: false, error: 'bad_magic_bytes' };
+  }
+
+  return { ok: true, buffer, bytes: buffer.length, contentType: 'application/pdf' };
 }

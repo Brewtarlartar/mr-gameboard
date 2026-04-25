@@ -16,7 +16,7 @@ import { toFile } from '@anthropic-ai/sdk';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { getAnthropic } from './client';
 import { getRulebookOverride } from './rulebook_overrides';
-import { fetchRulebookPdf } from './rulebook_fetch';
+import { fetchRulebookPdf, loadLocalRulebookPdf } from './rulebook_fetch';
 
 export type EnsureRulebookResult =
   | { ok: true; fileId: string; bytes: number; sourceUrl: string; reused: boolean }
@@ -44,10 +44,25 @@ async function loadRow(supabase: SupabaseClient, bggId: number): Promise<CacheRo
   return data;
 }
 
-function resolveSourceUrl(row: CacheRow): string | null {
+interface ResolvedSource {
+  kind: 'url' | 'file';
+  value: string;
+  /** Stable identifier we persist to rulebook_source_url for audit. */
+  audit: string;
+}
+
+function resolveSource(row: CacheRow): ResolvedSource | null {
   const override = getRulebookOverride(row.bgg_id);
-  if (override) return override.url;
-  if (row.rulebook_url && row.rulebook_url.trim()) return row.rulebook_url.trim();
+  if (override?.filePath) {
+    return { kind: 'file', value: override.filePath, audit: `file:${override.filePath}` };
+  }
+  if (override?.url) {
+    return { kind: 'url', value: override.url, audit: override.url };
+  }
+  if (row.rulebook_url && row.rulebook_url.trim()) {
+    const url = row.rulebook_url.trim();
+    return { kind: 'url', value: url, audit: url };
+  }
   return null;
 }
 
@@ -85,15 +100,18 @@ export async function ensureRulebookUploaded(
     };
   }
 
-  const sourceUrl = resolveSourceUrl(row);
-  if (!sourceUrl) {
+  const source = resolveSource(row);
+  if (!source) {
     await recordError(supabase, bggId, 'no_source_url', null);
     return { ok: false, error: 'no_source_url' };
   }
 
-  const fetched = await fetchRulebookPdf(sourceUrl);
+  const fetched =
+    source.kind === 'file'
+      ? await loadLocalRulebookPdf(source.value)
+      : await fetchRulebookPdf(source.value);
   if (!fetched.ok) {
-    await recordError(supabase, bggId, fetched.error, sourceUrl);
+    await recordError(supabase, bggId, fetched.error, source.audit);
     return { ok: false, error: fetched.error };
   }
 
@@ -108,7 +126,7 @@ export async function ensureRulebookUploaded(
   } catch (err) {
     const msg = err instanceof Error ? err.message : 'unknown';
     const error = `anthropic_upload_failed: ${msg}`.slice(0, 500);
-    await recordError(supabase, bggId, error, sourceUrl);
+    await recordError(supabase, bggId, error, source.audit);
     return { ok: false, error };
   }
 
@@ -118,7 +136,7 @@ export async function ensureRulebookUploaded(
       anthropic_file_id: uploaded.id,
       rulebook_uploaded_at: new Date().toISOString(),
       rulebook_pdf_bytes: uploaded.size_bytes ?? fetched.bytes,
-      rulebook_source_url: sourceUrl,
+      rulebook_source_url: source.audit,
       rulebook_upload_error: null,
     })
     .eq('bgg_id', bggId);
@@ -132,7 +150,7 @@ export async function ensureRulebookUploaded(
     ok: true,
     fileId: uploaded.id,
     bytes: uploaded.size_bytes ?? fetched.bytes,
-    sourceUrl,
+    sourceUrl: source.audit,
     reused: false,
   };
 }
