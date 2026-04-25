@@ -1,10 +1,14 @@
 import { NextRequest } from 'next/server';
+import type Anthropic from '@anthropic-ai/sdk';
 import { getAnthropic, MODELS } from '@/lib/ai/client';
 import { teachSystem, buildGameContext, type AiVoice } from '@/lib/ai/prompts';
 import { buildHydratedGameContext } from '@/lib/ai/gameContext';
+import { getRulebookAttachment } from '@/lib/ai/rulebook_attach';
 import type { TeachPlan, TeachChapter, TeachPlayer } from '@/lib/ai/types';
 import { checkRateLimit, rateLimitResponse } from '@/lib/rate-limit';
 import { createClient as createSupabaseServerClient } from '@/lib/supabase/server';
+
+const FILES_BETA = 'files-api-2025-04-14';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -65,20 +69,45 @@ export async function POST(req: NextRequest) {
   const resolvedVoice: AiVoice = voice === 'plain' ? 'plain' : 'wizard';
 
   const extras = { gameName, playerCount, players };
-  const hydrated = bggId ? await buildHydratedGameContext(supabase, bggId, extras) : null;
+  const [hydrated, rulebook] = await Promise.all([
+    bggId ? buildHydratedGameContext(supabase, bggId, extras) : Promise.resolve(null),
+    bggId ? getRulebookAttachment(supabase, bggId) : Promise.resolve(null),
+  ]);
   const context = hydrated || buildGameContext(extras);
   const userPrompt = `${context}\n\nTeach this specific group how to play. Return only the JSON object described in the system prompt.`;
 
   const client = getAnthropic();
-  const response = await client.messages.create({
-    model: MODELS.teach,
-    max_tokens: 4096,
-    system: teachSystem(resolvedVoice),
-    messages: [{ role: 'user', content: userPrompt }],
-  });
 
-  const textBlock = response.content.find((b) => b.type === 'text');
-  const text = textBlock && textBlock.type === 'text' ? textBlock.text : '';
+  let text: string;
+
+  if (rulebook) {
+    const firstContent: Anthropic.Beta.BetaContentBlockParam[] = [
+      {
+        type: 'document',
+        source: { type: 'file', file_id: rulebook.fileId },
+        cache_control: { type: 'ephemeral' },
+      },
+      { type: 'text', text: userPrompt },
+    ];
+    const response = await client.beta.messages.create({
+      model: MODELS.teach,
+      max_tokens: 4096,
+      system: teachSystem(resolvedVoice, true),
+      messages: [{ role: 'user', content: firstContent }],
+      betas: [FILES_BETA],
+    });
+    const textBlock = response.content.find((b) => b.type === 'text');
+    text = textBlock && textBlock.type === 'text' ? textBlock.text : '';
+  } else {
+    const response = await client.messages.create({
+      model: MODELS.teach,
+      max_tokens: 4096,
+      system: teachSystem(resolvedVoice, false),
+      messages: [{ role: 'user', content: userPrompt }],
+    });
+    const textBlock = response.content.find((b) => b.type === 'text');
+    text = textBlock && textBlock.type === 'text' ? textBlock.text : '';
+  }
 
   const plan = extractJson(text);
   if (!plan) {

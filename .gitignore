@@ -57,6 +57,11 @@ yarn-error.log*
 # supabase CLI scratch state
 /supabase/.temp/
 
+# Local rulebook PDFs — used only at upload time by the admin pre-warm
+# endpoint, then stored permanently on Anthropic Files API. Too big and
+# license-sensitive (publishers grant personal-use only) to commit.
+/game rulebooks/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
