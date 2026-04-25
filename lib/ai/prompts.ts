@@ -42,6 +42,7 @@ const RULEBOOK_GROUNDING_TEACH = `
 You have the official rulebook for this game attached as a PDF document. Use it as the authoritative source.
 - Follow the rulebook's own teach order where it gives one — don't reorder phases or shuffle setup steps.
 - When the rulebook lists components, setup, or phase names, use those exact terms and counts in your output.
+- When you state a specific component count, phase rule, or setup detail, briefly cite the rulebook in parentheses — e.g. "Each player draws 5 cards (Setup, p. 3)." Keep it light: one cite per claim is enough, only on claims a player might want to verify. Never invent a page number — if the rulebook doesn't have an obvious section/page reference, omit the cite for that claim.
 - If the rulebook differs from your training knowledge of this game, the rulebook wins.`;
 
 export function wizardSystem(
