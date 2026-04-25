@@ -1,8 +1,10 @@
 import type Anthropic from '@anthropic-ai/sdk';
 
-export function textStreamToResponse(
-  stream: ReturnType<Anthropic['messages']['stream']>,
-): Response {
+type SupportedStream =
+  | ReturnType<Anthropic['messages']['stream']>
+  | ReturnType<Anthropic['beta']['messages']['stream']>;
+
+export function textStreamToResponse(stream: SupportedStream): Response {
   const encoder = new TextEncoder();
   const readable = new ReadableStream<Uint8Array>({
     async start(controller) {

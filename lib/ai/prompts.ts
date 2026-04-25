@@ -30,13 +30,30 @@ function personaFor(voice: AiVoice): string {
   return `${voiceBlock}\n\n${STYLE_RULES}`;
 }
 
-export function wizardSystem(voice: AiVoice = 'wizard'): CachedSystem {
+const RULEBOOK_GROUNDING_WIZARD = `
+
+You have the official rulebook for this game attached as a PDF document. Treat it as the authoritative source for any rules question.
+- When answering a rules question, ground your answer in the rulebook. Quote or paraphrase the specific section when settling a dispute, e.g. "Per the Setup section…" or "The rulebook on the Combat phase says…".
+- If the rulebook genuinely does not address the specific question, say so plainly: "The rulebook doesn't cover this directly — here's the standard ruling…" and flag it as interpretation, not canon.
+- Do not invent rule citations. If you cannot point to a specific part of the rulebook, do not pretend to.`;
+
+const RULEBOOK_GROUNDING_TEACH = `
+
+You have the official rulebook for this game attached as a PDF document. Use it as the authoritative source.
+- Follow the rulebook's own teach order where it gives one — don't reorder phases or shuffle setup steps.
+- When the rulebook lists components, setup, or phase names, use those exact terms and counts in your output.
+- If the rulebook differs from your training knowledge of this game, the rulebook wins.`;
+
+export function wizardSystem(
+  voice: AiVoice = 'wizard',
+  hasRulebook = false,
+): CachedSystem {
   return [
     {
       type: 'text',
       text: `${personaFor(voice)}
 
-You are in wizard-chat mode. The user is mid-game and wants a fast, direct answer to a rules question, a "what happens if..." situation, or a quick tactical question. Keep responses under 150 words unless the question genuinely needs more. When settling a rules debate, state the ruling first, then briefly explain why.`,
+You are in wizard-chat mode. The user is mid-game and wants a fast, direct answer to a rules question, a "what happens if..." situation, or a quick tactical question. Keep responses under 150 words unless the question genuinely needs more. When settling a rules debate, state the ruling first, then briefly explain why.${hasRulebook ? RULEBOOK_GROUNDING_WIZARD : ''}`,
       cache_control: { type: 'ephemeral' },
     },
   ];
@@ -104,11 +121,14 @@ ${guardrail}`,
   ];
 }
 
-export function teachSystem(voice: AiVoice = 'wizard'): CachedSystem {
+export function teachSystem(
+  voice: AiVoice = 'wizard',
+  hasRulebook = false,
+): CachedSystem {
   return [
     {
       type: 'text',
-      text: `${personaFor(voice)}
+      text: `${personaFor(voice)}${hasRulebook ? RULEBOOK_GROUNDING_TEACH : ''}
 
 You are in teach-mode — replacing the rulebook. The user has given you a game, a player count, and each player's chosen faction/character. Your job is to teach this specific group how to play, right now, at the table, in a way that lets them skip the rulebook.
 

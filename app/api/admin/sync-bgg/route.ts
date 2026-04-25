@@ -100,8 +100,10 @@ export async function GET(req: NextRequest) {
     failed += batch.filter((id) => !returnedIds.has(id)).length;
 
     if (rows.length > 0) {
-      // Strip rulebook_url so we don't clobber the stored direct PDF URL
-      // with null — the bulk sync script is the authority on that column.
+      // Strip rulebook_url and the Phase B rulebook_* / anthropic_file_id
+      // columns so the daily cron doesn't clobber them with null. The bulk
+      // sync script and the upload-rulebook admin endpoints are the
+      // authorities on these columns.
       const stripped = rows.map(({ rulebook_url: _rulebook, ...rest }) => rest);
       const { error } = await supabase
         .from('bgg_games_cache')
