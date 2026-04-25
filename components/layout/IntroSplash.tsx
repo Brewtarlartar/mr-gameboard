@@ -21,7 +21,6 @@ export default function IntroSplash() {
   // refuses audio.play() without a prior user gesture, so the splash music
   // and the synchronized visual sequence are both gated behind that tap.
   const [started, setStarted] = useState(false);
-  const [ready, setReady] = useState(false);
   const splashAudioRef = useRef<HTMLAudioElement>(null);
 
   useEffect(() => {
@@ -50,7 +49,13 @@ export default function IntroSplash() {
     }
 
     const readyTimer = window.setTimeout(() => {
-      setReady(true);
+      try {
+        sessionStorage.setItem(STORAGE_KEY, '1');
+      } catch {}
+      try {
+        window.dispatchEvent(new Event('tome-audio-start'));
+      } catch {}
+      setShow(false);
     }, DURATION_MS);
 
     let rafId = 0;
@@ -81,16 +86,7 @@ export default function IntroSplash() {
   const handleTap = () => {
     if (!started) {
       setStarted(true);
-      return;
     }
-    if (!ready) return;
-    try {
-      sessionStorage.setItem(STORAGE_KEY, '1');
-    } catch {}
-    try {
-      window.dispatchEvent(new Event('tome-audio-start'));
-    } catch {}
-    setShow(false);
   };
 
   return (
@@ -197,18 +193,6 @@ export default function IntroSplash() {
             </motion.div>
           )}
 
-          {started && ready && (
-            <motion.div
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: [0, 1, 0.6, 1], y: 0 }}
-              transition={{ duration: 2, repeat: Infinity, repeatType: 'loop' }}
-              className="absolute bottom-8 left-0 right-0 flex justify-center pointer-events-none"
-            >
-              <span className="text-amber-200/90 text-[11px] sm:text-xs font-serif italic tracking-[0.2em] uppercase drop-shadow-[0_0_8px_rgba(251,191,36,0.5)]">
-                Tap to enter
-              </span>
-            </motion.div>
-          )}
         </motion.div>
       )}
     </AnimatePresence>
