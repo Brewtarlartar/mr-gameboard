@@ -130,6 +130,32 @@ export async function ensureRulebookUploaded(
     return { ok: false, error };
   }
 
+  // Phase B+: populate the columns the rulebook button reads.
+  // - URL-based override → store the publisher URL directly.
+  // - File-based override → re-host to private Supabase Storage so the
+  //   button can serve it via /api/rulebook/[bggId] with a signed URL.
+  let rulebookPublicUrl: string | null = null;
+  let rulebookStoragePath: string | null = null;
+
+  if (source.kind === 'url') {
+    rulebookPublicUrl = source.value;
+  } else {
+    const storagePath = `${bggId}.pdf`;
+    const { error: storageErr } = await supabase.storage
+      .from('rulebooks')
+      .upload(storagePath, fetched.buffer, {
+        contentType: 'application/pdf',
+        upsert: true,
+      });
+    if (storageErr) {
+      // Don't fail the whole upload — Anthropic file is already stored,
+      // wizard still works. Just record the storage failure for observability.
+      console.error(`[rulebook] storage upload ${bggId}:`, storageErr.message);
+    } else {
+      rulebookStoragePath = storagePath;
+    }
+  }
+
   const { error: dbErr } = await supabase
     .from('bgg_games_cache')
     .update({
@@ -138,6 +164,8 @@ export async function ensureRulebookUploaded(
       rulebook_pdf_bytes: uploaded.size_bytes ?? fetched.bytes,
       rulebook_source_url: source.audit,
       rulebook_upload_error: null,
+      rulebook_public_url: rulebookPublicUrl,
+      rulebook_storage_path: rulebookStoragePath,
     })
     .eq('bgg_id', bggId);
 

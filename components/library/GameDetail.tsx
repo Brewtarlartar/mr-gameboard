@@ -28,7 +28,6 @@ import {
 import { createPortal } from 'react-dom';
 import { Game, Player } from '@/types/game';
 import { cn } from '@/lib/utils';
-import { rulebookUrlWithFallback } from '@/lib/bgg/api';
 import { decodeHtmlEntities } from '@/lib/text/decodeHtml';
 import BggAttribution from '@/components/ui/BggAttribution';
 import { usePlaySessionStore } from '@/lib/store/playSessionStore';
@@ -203,7 +202,7 @@ export default function GameDetail({
   const displayDescription = liveDescription || game.description;
   const cleanedDescription = displayDescription ? cleanDescription(displayDescription) : null;
   const amazonUrl = getAmazonSearchUrl(game.name);
-  const rulebookUrl = rulebookUrlWithFallback(game.bggId, game.name, game.rulebookUrl);
+  const rulebookUrl = game.bggId ? `/api/rulebook/${game.bggId}` : null;
 
   const modalContent = (
     <AnimatePresence>

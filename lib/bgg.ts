@@ -3,7 +3,6 @@
 
 import { createClient } from '@/lib/supabase/client';
 import { GameSearchResult, GameDetail } from '@/types/game';
-import { rulebookUrlWithFallback } from '@/lib/bgg/api';
 
 // Create a server-side Supabase client for API routes
 const getSupabaseClient = () => {
@@ -65,7 +64,10 @@ function toGameDetail(cached: CachedGame): GameDetail {
     genres: cached.categories || [], // Alias for categories
     designers: cached.designers || [],
     artists: cached.artists || [],
-    rulebookUrl: rulebookUrlWithFallback(cached.bgg_id, cached.name, cached.rulebook_url),
+    // Always route through /api/rulebook/[bggId] — the resolver handles
+    // publisher URLs, signed URLs for re-hosted PDFs, and BGG/Google
+    // fallback for unseeded games.
+    rulebookUrl: `/api/rulebook/${cached.bgg_id}`,
   };
 }
 
