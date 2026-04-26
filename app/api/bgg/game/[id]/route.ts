@@ -3,7 +3,6 @@ import { getGameDetails } from '@/lib/bgg';
 import {
   fetchBggThing,
   hasBggToken,
-  rulebookUrlWithFallback,
   type BggCacheRow,
 } from '@/lib/bgg/api';
 import { getStapleGames } from '@/lib/games/staples';
@@ -86,7 +85,7 @@ function rowToDetail(row: BggCacheRow): GameDetail {
     genres: row.categories || [],
     designers: row.designers || [],
     artists: row.artists || [],
-    rulebookUrl: rulebookUrlWithFallback(row.bgg_id, row.name, row.rulebook_url),
+    rulebookUrl: `/api/rulebook/${row.bgg_id}`,
   };
 }
 

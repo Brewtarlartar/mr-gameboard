@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getGameDetails } from '@/lib/bgg';
-import { rulebookUrlWithFallback } from '@/lib/bgg/api';
 import { getStapleGames } from '@/lib/games/staples';
 import { Game } from '@/types/game';
 
@@ -186,7 +185,7 @@ export async function POST(request: NextRequest) {
           categories: game.categories?.length > 0 ? game.categories : categories.slice(0, 5),
           mechanics: game.mechanics?.length > 0 ? game.mechanics : mechanics.slice(0, 5),
           genres: game.genres?.length > 0 ? game.genres : categories.slice(0, 5),
-          rulebookUrl: game.rulebookUrl || rulebookUrlWithFallback(game.bggId, game.name, null),
+          rulebookUrl: game.bggId ? `/api/rulebook/${game.bggId}` : game.rulebookUrl,
         };
 
         enrichedGames.push(applyStapleOverlay(enrichedGame));
