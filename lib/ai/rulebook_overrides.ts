@@ -66,16 +66,80 @@ export const RULEBOOK_OVERRIDES: Record<number, RulebookOverride> = {
   128621: { filePath: 'game rulebooks/Rules and Other Public Files/Viticulture/VitiRulebook_EssEd_2nd_r15_web.pdf', note: 'Stonemaier — Viticulture (Essential Edition)' },
   410201: { filePath: 'game rulebooks/Rules and Other Public Files/Wyrmspan/Wyr_Rulebook_r19.pdf', note: 'Stonemaier — Wyrmspan' },
 
+  // ─── Top BGG-ranked games via publisher PDFs (2026-04-26, PR 3b) ───
+  // Mix of publisher-direct (preferred) and 1j1ju.com mirrors (third-party
+  // aggregator, stable but not authoritative). Marked in notes.
+
+  // Roxley Games — Brass family (1j1ju mirror; Roxley's Shopify CDN URL
+  // pattern wasn't easily discoverable). Brass: Birmingham fails
+  // Anthropic's PDF processing — see disabled section below.
+  28720:  { url: 'https://cdn.1j1ju.com/medias/0d/25/6d-brass-lancashire-rulebook.pdf', note: 'Roxley Games — Brass: Lancashire (1j1ju mirror)' },
+
+  // Feuerland Spiele — publisher-direct
+  342942: { url: 'https://www.feuerland-spiele.de/fileadmin/game/Arche_Nova/Arche_Nova_Rules_EN_Low_2022_01.pdf', note: 'Feuerland Spiele — Ark Nova' },
+  220308: { url: 'https://www.feuerland-spiele.de/fileadmin/game/Gaia_Project/GAIA_PROJECT_EN_rules_Web.pdf', note: 'Feuerland Spiele — Gaia Project' },
+
+  // Cephalofair — Gloomhaven family (1j1ju mirrors).
+  // Both Gloomhaven and Jaws of the Lion fail Anthropic's PDF processing
+  // — see disabled section below. Frosthaven was never URL-discoverable.
+
+  // Fantasy Flight Games — publisher-direct CDN
+  233078: { url: 'https://images-cdn.fantasyflightgames.com/filer_public/3a/fc/3afce41b-b757-4dc8-b005-3a5efffd0fad/ti4_living_rules_reference_v1_1.pdf', note: 'Fantasy Flight Games — Twilight Imperium: Fourth Edition' },
+  187645: { url: 'https://images-cdn.fantasyflightgames.com/filer_public/0b/07/0b07601a-6ac3-4333-ac41-b6d1b9a979da/sw03_learn_to_play_web.pdf', note: 'Fantasy Flight Games — Star Wars: Rebellion (Learn-to-Play)' },
+
+  // GMT Games — publisher-direct
+  12333:  { url: 'https://www.gmtgames.com/nnts/TS_Rules-2015.pdf', note: 'GMT Games — Twilight Struggle (2015 rules)' },
+
+  // Repos Production / Asmodee — publisher CDN
+  173346: { url: 'https://cdn.svc.asmodee.net/production-rprod/storage/downloads/games/7wonders-duel/en/7du-rules-us-15990558193s5I6.pdf', note: 'Repos Production — 7 Wonders Duel' },
+
+  // Czech Games Edition — publisher-direct (Through the Ages disabled —
+  // 35MB PDF fails Anthropic processing, see disabled section).
+  312484: { url: 'https://cdn.1j1ju.com/medias/6f/e9/0c-lost-ruins-of-arnak-rulebook.pdf', note: 'Czech Games Edition — Lost Ruins of Arnak (1j1ju mirror)' },
+  418059: { url: 'https://filemanager.czechgames.com/storage/files/seti-search-for-extraterrestrial-intelligence/rules/seti-rules-en.pdf', note: 'Czech Games Edition — SETI: Search for Extraterrestrial Intelligence' },
+
+  // Z-Man Games + Asmodee CDN
+  161936: { url: 'https://cdn.1j1ju.com/medias/e6/fc/aa-pandemic-legacy-season-1-rulebook.pdf', note: 'Z-Man Games — Pandemic Legacy: Season 1 (1j1ju mirror)' },
+  193738: { url: 'https://asmodee-resources.azureedge.net/media/germanyprod/Regeln/Great%20Western%20Trail%202%20Edition-Rulebook.pdf', note: 'Eggertspiele / Stronghold Games — Great Western Trail (2nd Ed)' },
+
+  // Lautapelit — Eclipse (1j1ju mirror)
+  246900: { url: 'https://cdn.1j1ju.com/medias/bb/af/07-eclipse-second-dawn-for-the-galaxy-rulebook.pdf', note: 'Lautapelit — Eclipse: Second Dawn for the Galaxy (1j1ju mirror)' },
+
+  // Rio Grande Games — Concordia (English publisher)
+  124361: { url: 'https://www.riograndegames.com/wp-content/uploads/2013/10/Concordia_rules_eng_1_1.pdf', note: 'Rio Grande Games — Concordia' },
+
+  // Ravensburger / Alea — Castles of Burgundy (1j1ju mirror)
+  84876:  { url: 'https://cdn.1j1ju.com/medias/04/f5/f9-the-castles-of-burgundy-rulebook.pdf', note: 'Ravensburger / Alea — The Castles of Burgundy (1j1ju mirror)' },
+
+  // Contention Games — publisher-direct
+  338960: { url: 'https://contentiongames.com/_images/STS_KS_Rulebook.pdf', note: 'Contention Games — Slay the Spire: The Board Game' },
+
+  // Renegade — Clank! Legacy (1j1ju mirror)
+  266507: { url: 'https://cdn.1j1ju.com/medias/a0/f1/40-clank-legacy-acquisitions-incorporated-rulebook.pdf', note: 'Renegade Game Studios — Clank! Legacy: Acquisitions Incorporated (1j1ju mirror)' },
+
+  // ─── Known-want games not yet seeded ───
+  // 162886 Spirit Island — Greater Than Games hosts via Dropbox folder
+  //   share link; HEAD returns HTML, can't validate as PDF without
+  //   manually downloading + re-hosting locally.
+  // 167355 Nemesis — Awaken Realms returns 403 to scripted requests;
+  //   need to find an alternate URL or re-host.
+
   // ─── Disabled (Anthropic returns "Could not process PDF" 400) ───
   // These Stonemaier print-quality PDFs (image-heavy, very large) trip
   // Anthropic's PDF processing. Wizard answers will use training
   // knowledge for these games until we either compress the PDFs or
   // implement chat-route fallback. The rulebook button still works
   // (BGG /files fallback).
-  // 266192: Wingspan (75.9 MB)
-  // 379078: Expeditions (90.6 MB)
-  // 312804: Pendulum (46.1 MB)
-  // 329465: Red Rising (25.1 MB — surprisingly fails despite being smaller)
+  // 266192: Wingspan (75.9 MB) — Stonemaier
+  // 379078: Expeditions (90.6 MB) — Stonemaier
+  // 312804: Pendulum (46.1 MB) — Stonemaier
+  // 329465: Red Rising (25.1 MB) — Stonemaier
+  // 224517: Brass: Birmingham (6.5 MB, 1j1ju mirror) — small but rejected
+  // 174430: Gloomhaven (12.8 MB, 1j1ju mirror) — small but rejected
+  // 291457: Gloomhaven: Jaws of the Lion (7.4 MB, 1j1ju mirror) — small but rejected
+  // 182028: Through the Ages (35.0 MB, czechgames.com) — large
+  // Pattern: 1j1ju.com mirrored PDFs trip Anthropic disproportionately
+  // (3 of 4 1j1ju picks failed); large publisher PDFs (>30MB) also at risk.
 };
 
 export function getRulebookOverride(bggId: number): RulebookOverride | null {
