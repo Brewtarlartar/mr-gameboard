@@ -1,26 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getGameDetails } from '@/lib/bgg';
-import {
-  fetchBggThing,
-  hasBggToken,
-  type BggCacheRow,
-} from '@/lib/bgg/api';
+import { hasBggToken, type BggCacheRow } from '@/lib/bgg/api';
+import { backfillFromBgg } from '@/lib/bgg/backfill';
 import { getStapleGames } from '@/lib/games/staples';
 import { GameDetail } from '@/types/game';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
-
-function getServiceClient() {
-  const { createClient } = require('@supabase/supabase-js');
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-  const key =
-    process.env.SUPABASE_SERVICE_ROLE_KEY ||
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-    '';
-  if (!url || !key) return null;
-  return createClient(url, key);
-}
 
 /** A cached row is "rich" if it has both a real description and an image. */
 function isRich(d: GameDetail | null): boolean {
@@ -87,20 +73,6 @@ function rowToDetail(row: BggCacheRow): GameDetail {
     artists: row.artists || [],
     rulebookUrl: `/api/rulebook/${row.bgg_id}`,
   };
-}
-
-async function backfillFromBgg(bggId: number): Promise<BggCacheRow | null> {
-  const row = await fetchBggThing(bggId);
-  if (!row) return null;
-
-  const supabase = getServiceClient();
-  if (supabase) {
-    const { error } = await supabase
-      .from('bgg_games_cache')
-      .upsert(row, { onConflict: 'bgg_id' });
-    if (error) console.warn('[BGG backfill] upsert error:', error.message);
-  }
-  return row;
 }
 
 export async function GET(

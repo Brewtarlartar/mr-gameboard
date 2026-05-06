@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { Search, Loader2, X, History, Clock, Plus } from 'lucide-react';
+import { Search, Loader2, X, History, Clock, Plus, Link2 } from 'lucide-react';
 import {
   debouncedSearch,
   saveSearchHistory,
@@ -10,6 +10,26 @@ import {
   clearSearchHistory,
 } from '@/lib/agents/library/search';
 import BggAttribution from '@/components/ui/BggAttribution';
+
+/**
+ * Extract a BGG game ID from either a bare numeric string or a full BGG URL
+ * (e.g. https://boardgamegeek.com/boardgame/266192/wingspan).
+ * Returns null if we can't find one.
+ */
+function parseBggInput(raw: string): number | null {
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  if (/^\d+$/.test(trimmed)) {
+    const n = parseInt(trimmed, 10);
+    return Number.isFinite(n) && n > 0 ? n : null;
+  }
+  const m = trimmed.match(/\/boardgame(?:expansion)?\/(\d+)/i);
+  if (m) {
+    const n = parseInt(m[1], 10);
+    return Number.isFinite(n) && n > 0 ? n : null;
+  }
+  return null;
+}
 
 interface GameSearchResult {
   id: number;
@@ -30,6 +50,53 @@ export default function GameSearch({ onSelectGame }: GameSearchProps) {
   const [error, setError] = useState<string | null>(null);
   const [showHistory, setShowHistory] = useState(false);
   const [searchHistory, setSearchHistory] = useState<string[]>([]);
+
+  // "Have a BGG link?" escape hatch
+  const [showBggAdd, setShowBggAdd] = useState(false);
+  const [bggInput, setBggInput] = useState('');
+  const [bggAdding, setBggAdding] = useState(false);
+  const [bggError, setBggError] = useState<string | null>(null);
+
+  const handleBggAdd = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (bggAdding) return;
+
+    const bggId = parseBggInput(bggInput);
+    if (!bggId) {
+      setBggError("Couldn't read a BGG ID from that. Paste a full BGG link or just the numeric ID.");
+      return;
+    }
+
+    setBggAdding(true);
+    setBggError(null);
+
+    try {
+      const res = await fetch('/api/bgg/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bggId }),
+      });
+      const data = (await res.json()) as { ok: boolean; bggId?: number; name?: string; error?: string };
+      if (!res.ok || !data.ok || !data.bggId) {
+        setBggError(data.error || `BoardGameGeek didn't recognize ID ${bggId}.`);
+        setBggAdding(false);
+        return;
+      }
+
+      saveSearchHistory(data.name || String(data.bggId));
+      setSearchHistory(getSearchHistory());
+
+      onSelectGame(data.bggId);
+      setBggInput('');
+      setShowBggAdd(false);
+      setQuery('');
+      setResults([]);
+    } catch (err) {
+      setBggError(err instanceof Error ? err.message : 'Network error reaching BGG.');
+    } finally {
+      setBggAdding(false);
+    }
+  };
 
   useEffect(() => {
     setSearchHistory(getSearchHistory());
@@ -123,6 +190,65 @@ export default function GameSearch({ onSelectGame }: GameSearchProps) {
           >
             <History className="w-5 h-5" />
           </button>
+        )}
+      </div>
+
+      <div className="mt-1.5 px-1">
+        {!showBggAdd ? (
+          <button
+            type="button"
+            onClick={() => {
+              setShowBggAdd(true);
+              setBggError(null);
+            }}
+            className="inline-flex items-center gap-1.5 text-[11px] text-amber-200/60 hover:text-amber-100 font-serif italic transition-colors"
+          >
+            <Link2 className="w-3 h-3" />
+            <span>Can&rsquo;t find it? Paste a BoardGameGeek link or ID</span>
+          </button>
+        ) : (
+          <form onSubmit={handleBggAdd} className="space-y-1.5">
+            <div className="flex gap-2">
+              <div className="relative flex-1 min-w-0">
+                <Link2 className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-amber-200/50 pointer-events-none" />
+                <input
+                  type="text"
+                  value={bggInput}
+                  onChange={(e) => {
+                    setBggInput(e.target.value);
+                    if (bggError) setBggError(null);
+                  }}
+                  placeholder="https://boardgamegeek.com/boardgame/266192/wingspan  or just  266192"
+                  disabled={bggAdding}
+                  autoFocus
+                  className="w-full pl-8 pr-3 py-2 bg-stone-900/70 border border-amber-900/50 rounded-lg text-amber-100 placeholder-amber-200/30 font-serif italic text-[11px] sm:text-xs focus:outline-none focus:border-amber-500/60 disabled:opacity-60"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={!bggInput.trim() || bggAdding}
+                className="inline-flex items-center gap-1.5 px-3 py-2 bg-amber-500 hover:bg-amber-400 disabled:bg-stone-700 disabled:text-stone-500 text-stone-950 font-serif font-semibold text-xs rounded-lg transition-colors"
+              >
+                {bggAdding ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+                <span>Add</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowBggAdd(false);
+                  setBggInput('');
+                  setBggError(null);
+                }}
+                className="inline-flex items-center justify-center px-2 text-amber-200/60 hover:text-amber-100"
+                aria-label="Close BGG add"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            {bggError && (
+              <p className="text-[11px] text-red-300/90 font-serif italic px-1">{bggError}</p>
+            )}
+          </form>
         )}
       </div>
 
