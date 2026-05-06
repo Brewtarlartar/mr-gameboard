@@ -103,35 +103,49 @@ export async function GET(request: NextRequest) {
   // Always have a local seed result ready as the ultimate fallback.
   const seedResults = searchSeedGames(query, 20);
 
-  // Primary: query our 137k-row Supabase cache.
-  const cacheHits = await searchSupabase(query, 25);
+  // Run cache + live BGG in parallel — cache returns fast, BGG fills gaps
+  // (the user's shelf game might not be in the ~582-row cache but BGG
+  // knows about it). Cache wins on duplicates because the row is already
+  // validated locally.
+  const [cacheHits, bggHits] = await Promise.all([
+    searchSupabase(query, 25),
+    hasBggToken() ? fetchBggSearch(query, { limit: 25 }) : Promise.resolve(null),
+  ]);
 
-  if (cacheHits && cacheHits.length > 0) {
-    // Hydrate any missing thumbnails from the local seed by BGG ID.
-    if (seedResults.length) {
-      const seedMap = new Map(seedResults.map((s) => [s.id, s]));
-      for (const g of cacheHits) {
-        if (!g.thumbnail) {
-          const seed = seedMap.get(g.id);
-          if (seed?.thumbnail) g.thumbnail = seed.thumbnail;
-        }
+  const seedMap = new Map(seedResults.map((s) => [s.id, s]));
+
+  const merged: SearchHit[] = [];
+  const seen = new Set<number>();
+
+  // Cache hits first — they're already in the catalog.
+  if (cacheHits) {
+    for (const g of cacheHits) {
+      if (seen.has(g.id)) continue;
+      seen.add(g.id);
+      if (!g.thumbnail) {
+        const seed = seedMap.get(g.id);
+        if (seed?.thumbnail) g.thumbnail = seed.thumbnail;
       }
+      merged.push(g);
     }
-    return NextResponse.json({ games: cacheHits.slice(0, 20), source: 'cache' });
   }
 
-  // Cache empty/unreachable — try a live BGG search if we have a token.
-  if (hasBggToken()) {
-    const bggHits = await fetchBggSearch(query, { limit: 20 });
-    if (bggHits && bggHits.length > 0) {
-      // Hydrate thumbnails from the local seed by BGG ID where we can.
-      const seedMap = new Map(seedResults.map((s) => [s.id, s]));
-      const enriched: SearchHit[] = bggHits.map((h) => {
-        const seed = seedMap.get(h.id);
-        return { ...h, thumbnail: seed?.thumbnail };
-      });
-      return NextResponse.json({ games: enriched, source: 'bgg' });
+  // BGG-only hits next — these are the games we'd otherwise be missing.
+  if (bggHits) {
+    for (const h of bggHits) {
+      if (seen.has(h.id)) continue;
+      seen.add(h.id);
+      const seed = seedMap.get(h.id);
+      merged.push({ ...h, thumbnail: seed?.thumbnail });
     }
+  }
+
+  if (merged.length > 0) {
+    let source: 'cache' | 'bgg' | 'mixed';
+    if (cacheHits && cacheHits.length > 0 && bggHits && bggHits.length > 0) source = 'mixed';
+    else if (cacheHits && cacheHits.length > 0) source = 'cache';
+    else source = 'bgg';
+    return NextResponse.json({ games: merged.slice(0, 25), source });
   }
 
   // Final fallback — bundled seed catalog.
