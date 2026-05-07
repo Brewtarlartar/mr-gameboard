@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { searchSeedGames } from '@/lib/games/seedFallback';
-import { fetchBggSearch, hasBggToken } from '@/lib/bgg/api';
+import { fetchBggSearch, fetchBggThingsBatch, hasBggToken } from '@/lib/bgg/api';
+import { upsertBggRow } from '@/lib/bgg/backfill';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -141,6 +142,38 @@ export async function GET(request: NextRequest) {
   }
 
   if (merged.length > 0) {
+    // Enrich BGG-only hits with thumbnails. The XML search endpoint only
+    // returns id/name/year — no images. Fetch /thing in batch for the top
+    // results so cards have real cover art instead of the dice fallback.
+    // Also fire-and-forget upserts so the next search hits cache directly.
+    const enrichTargets = merged
+      .filter((g) => !g.thumbnail)
+      .slice(0, 12)
+      .map((g) => g.id);
+    if (enrichTargets.length > 0 && hasBggToken()) {
+      const things = await fetchBggThingsBatch(enrichTargets, { timeoutMs: 12000 });
+      if (things.length > 0) {
+        const thingMap = new Map(things.map((t) => [t.bgg_id, t]));
+        for (const g of merged) {
+          const t = thingMap.get(g.id);
+          if (t) {
+            if (!g.thumbnail && (t.thumbnail || t.image)) {
+              g.thumbnail = t.thumbnail || t.image || undefined;
+            }
+            if (g.rating == null && t.rating != null) g.rating = t.rating;
+            if (g.rank == null && t.rank != null) g.rank = t.rank;
+          }
+        }
+        // Persist the enriched rows to cache so subsequent searches return
+        // instantly with full metadata. Don't await; the response goes
+        // out before upserts complete. We already have the rows from the
+        // batch fetch above — no second BGG roundtrip.
+        for (const t of things) {
+          void upsertBggRow(t);
+        }
+      }
+    }
+
     let source: 'cache' | 'bgg' | 'mixed';
     if (cacheHits && cacheHits.length > 0 && bggHits && bggHits.length > 0) source = 'mixed';
     else if (cacheHits && cacheHits.length > 0) source = 'cache';

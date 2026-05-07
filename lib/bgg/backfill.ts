@@ -10,6 +10,7 @@
  */
 
 import { fetchBggThing, type BggCacheRow } from './api';
+export type { BggCacheRow };
 
 function getServiceClient() {
   const { createClient } = require('@supabase/supabase-js');
@@ -24,16 +25,23 @@ function getServiceClient() {
   });
 }
 
+/**
+ * Upsert a row we already have (e.g. from a batch /thing fetch) into the
+ * cache. Use this when the search route enriches BGG hits with thumbnails
+ * via `fetchBggThingsBatch` and we don't want to refetch them one-by-one.
+ */
+export async function upsertBggRow(row: BggCacheRow): Promise<void> {
+  const supabase = getServiceClient();
+  if (!supabase) return;
+  const { error } = await supabase
+    .from('bgg_games_cache')
+    .upsert(row, { onConflict: 'bgg_id' });
+  if (error) console.warn(`[BGG backfill] upsert ${row.bgg_id}:`, error.message);
+}
+
 export async function backfillFromBgg(bggId: number): Promise<BggCacheRow | null> {
   const row = await fetchBggThing(bggId);
   if (!row) return null;
-
-  const supabase = getServiceClient();
-  if (supabase) {
-    const { error } = await supabase
-      .from('bgg_games_cache')
-      .upsert(row, { onConflict: 'bgg_id' });
-    if (error) console.warn(`[BGG backfill] upsert ${bggId}:`, error.message);
-  }
+  await upsertBggRow(row);
   return row;
 }
