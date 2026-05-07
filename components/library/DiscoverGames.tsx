@@ -12,6 +12,7 @@ import {
   ChevronRight,
   Heart,
   Scale,
+  Loader2,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useGameStore } from '@/lib/store/gameStore';
@@ -59,11 +60,48 @@ const SHELVES: ShelfMeta[] = [
   },
 ];
 
+interface BggSearchHit {
+  id: number;
+  name: string;
+  yearPublished?: number;
+  thumbnail?: string;
+  rating?: number;
+  rank?: number;
+}
+
+function bggHitToSeed(h: BggSearchHit): SeedGame {
+  return {
+    bggId: String(h.id),
+    title: h.name,
+    description: '',
+    image: h.thumbnail ?? null,
+    thumbnail: h.thumbnail ?? null,
+    yearPublished: h.yearPublished ?? null,
+    minPlayers: null,
+    maxPlayers: null,
+    playingTime: null,
+    minPlayTime: null,
+    maxPlayTime: null,
+    minAge: null,
+    rating: h.rating ?? null,
+    weight: null,
+    categories: [],
+    mechanics: [],
+    designers: [],
+    publishers: [],
+    rank: h.rank ?? 0,
+  };
+}
+
 export default function DiscoverGames() {
   const [searchQuery, setSearchQuery] = useState('');
   const [addingGameId, setAddingGameId] = useState<string | null>(null);
   const [selectedGame, setSelectedGame] = useState<SeedGame | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Live BGG search results (games not in our local seed catalog).
+  const [bggExtras, setBggExtras] = useState<SeedGame[]>([]);
+  const [bggSearching, setBggSearching] = useState(false);
 
   const {
     discoverCategories,
@@ -78,6 +116,38 @@ export default function DiscoverGames() {
   useEffect(() => {
     loadDiscoverGames();
   }, [loadDiscoverGames]);
+
+  // Debounced live BGG search — surfaces games not in the local seed shelves.
+  useEffect(() => {
+    const q = searchQuery.trim();
+    if (q.length < 2) {
+      setBggExtras([]);
+      setBggSearching(false);
+      return;
+    }
+    let cancelled = false;
+    setBggSearching(true);
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/bgg/search?query=${encodeURIComponent(q)}`);
+        if (!res.ok) {
+          if (!cancelled) setBggExtras([]);
+          return;
+        }
+        const data = (await res.json()) as { games?: BggSearchHit[] };
+        if (cancelled) return;
+        setBggExtras((data.games || []).map(bggHitToSeed));
+      } catch {
+        if (!cancelled) setBggExtras([]);
+      } finally {
+        if (!cancelled) setBggSearching(false);
+      }
+    }, 400);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [searchQuery]);
 
   const filterGames = (games: SeedGame[]) => {
     if (!searchQuery.trim()) return games;
@@ -145,7 +215,19 @@ export default function DiscoverGames() {
     return { meta, name: cat.name, totalCount: cat.count, games: filtered };
   }).filter((s): s is NonNullable<typeof s> => s !== null);
 
-  const anyResults = visibleShelves.some((s) => s.games.length > 0);
+  // Dedupe BGG live results against any games already shown in the local
+  // shelves, then expose them as an extra "Found on BoardGameGeek" shelf
+  // when the user is actively searching.
+  const localBggIds = new Set<string>();
+  for (const s of visibleShelves) {
+    for (const g of s.games) localBggIds.add(g.bggId);
+  }
+  const bggExtrasUnique = searchQuery.trim().length >= 2
+    ? bggExtras.filter((g) => !localBggIds.has(g.bggId))
+    : [];
+
+  const anyResults =
+    visibleShelves.some((s) => s.games.length > 0) || bggExtrasUnique.length > 0;
 
   return (
     <>
@@ -199,6 +281,29 @@ export default function DiscoverGames() {
                 />
               );
             })}
+            {bggExtrasUnique.length > 0 && (
+              <CatalogShelf
+                key="bgg-live"
+                title="Found on BoardGameGeek"
+                description="Pulled live from BGG so thy shelf games appear even when not yet in our archive"
+                badge="BGG live"
+                games={bggExtrasUnique}
+                totalCount={bggExtrasUnique.length}
+                searching
+                isGameOwned={isGameOwned}
+                isInWishlist={isInWishlist}
+                addingGameId={addingGameId}
+                onAdd={handleAddGame}
+                onAddToWishlist={handleAddToWishlist}
+                onCardClick={handleCardClick}
+              />
+            )}
+            {bggSearching && bggExtrasUnique.length === 0 && searchQuery.trim().length >= 2 && (
+              <div className="flex items-center justify-center gap-2 py-4 text-amber-200/60 font-serif italic text-xs">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Reaching BoardGameGeek for additional matches…
+              </div>
+            )}
           </div>
         )}
       </div>
