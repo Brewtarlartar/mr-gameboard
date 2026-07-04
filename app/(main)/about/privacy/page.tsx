@@ -66,8 +66,9 @@ export default function PrivacyPage() {
             <span className="font-semibold">Anthropic (PBC)</span> — when thou askest
             the Wizard, the Sage, or the Teacher a question, thy prompt and any
             relevant game context are sent to Anthropic&apos;s Claude API to
-            produce an answer. Anthropic processes this as our service provider,
-            does not train its models on it by default, and retains it only briefly.
+            produce an answer. Anthropic processes this as our service provider and
+            does not train its models on it by default; it is retained only for a
+            limited period under Anthropic&apos;s data-retention policy.
           </li>
           <li>
             <span className="font-semibold">Supabase</span> — our database, auth,

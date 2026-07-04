@@ -36,7 +36,6 @@ interface GameStore {
   discoverCategories: DiscoverCategories | null;
   allDiscoverGames: SeedGame[];
   discoverLoaded: boolean;
-  discoverError: boolean;
 
   // Chat state
   chatMessages: ChatMessage[];
@@ -79,7 +78,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
   discoverCategories: null,
   allDiscoverGames: [],
   discoverLoaded: false,
-  discoverError: false,
   chatMessages: [],
   currentSession: null,
   
@@ -110,21 +108,21 @@ export const useGameStore = create<GameStore>((set, get) => ({
           discoverCategories: data.categories || null,
           allDiscoverGames: data.allGames || [],
           discoverLoaded: true,
-          discoverError: false,
         });
       } else {
         throw new Error('Failed to fetch discover games');
       }
     } catch (error) {
       console.error('Failed to load discover games:', error);
-      // Mark as loaded (so the mount effect stops re-firing) but flag the error
-      // so the UI can show a retry affordance instead of a permanently blank page.
-      set({ discoverLoaded: true, discoverError: true });
+      // Mark as loaded (so the mount effect stops re-firing). discoverCategories
+      // stays null, which the Catalog UI renders as a retry affordance instead of
+      // a permanently blank page.
+      set({ discoverLoaded: true });
     }
   },
 
   retryDiscover: async () => {
-    set({ discoverLoaded: false, discoverError: false });
+    set({ discoverLoaded: false });
     await get().loadDiscoverGames();
   },
 

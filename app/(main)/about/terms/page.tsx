@@ -77,6 +77,17 @@ export default function TermsPage() {
 
       <section className="bg-gradient-to-b from-stone-900/80 to-stone-950/80 border border-amber-900/50 rounded-2xl p-5 space-y-3 text-amber-100/85 text-sm font-serif leading-relaxed">
         <h2 className="text-xs font-serif font-semibold text-amber-200 uppercase tracking-widest">
+          Affiliate links
+        </h2>
+        <p>
+          Some &ldquo;buy&rdquo; links are Amazon affiliate links. As an Amazon Associate,
+          The Tome may earn a small commission from qualifying purchases, at no extra
+          cost to thee. This never affects which games we show or recommend.
+        </p>
+      </section>
+
+      <section className="bg-gradient-to-b from-stone-900/80 to-stone-950/80 border border-amber-900/50 rounded-2xl p-5 space-y-3 text-amber-100/85 text-sm font-serif leading-relaxed">
+        <h2 className="text-xs font-serif font-semibold text-amber-200 uppercase tracking-widest">
           Accounts &amp; termination
         </h2>
         <p>

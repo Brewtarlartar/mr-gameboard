@@ -81,12 +81,17 @@ export default function MePage() {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.error || `Deletion failed (${res.status})`);
       }
-      // Wipe local data and sign out fully.
-      handleClearAll();
-      const supabase = createClient();
-      await supabase.auth.signOut();
+      // The account is gone at this point — reflect that immediately so a failing
+      // sign-out can't leave the UI looking signed-in.
       setUserEmail(null);
       setConfirmDelete(false);
+      // Wipe local data and clear the client session (best-effort).
+      handleClearAll();
+      try {
+        await createClient().auth.signOut();
+      } catch {
+        /* session is already invalid server-side; ignore */
+      }
     } catch (e) {
       setDeleteError(e instanceof Error ? e.message : 'Deletion failed');
     } finally {

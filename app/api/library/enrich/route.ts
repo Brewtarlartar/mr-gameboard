@@ -26,34 +26,40 @@ function applyStapleOverlay<T extends Partial<Game>>(game: T): T {
  * This will fetch full data for games that have missing or incomplete descriptions
  * Tries Supabase cache first, then falls back to BGG API if needed
  */
-// This endpoint is public and does a live BGG fetch per cache-miss. Bound both
-// the array size (so we never iterate an unbounded list) and the number of live
-// BGG calls (so a request full of uncached ids can't hammer BGG from our IPs).
-// Every game is still returned — games past the budget just pass through
-// unenriched, so callers that replace the library with the response never lose rows.
-const MAX_GAMES = 500;
+// This endpoint is public and does a live BGG fetch per cache-miss. We bound the
+// expensive work — the number of Supabase reads (MAX_ENRICH_LOOKUPS) and live BGG
+// calls (MAX_LIVE_BGG_CALLS) — WITHOUT dropping any game from the response. Callers
+// (autoEnrichLibrary/enrichLibrary) overwrite the whole local library with what we
+// return, so every input game MUST come back or those rows are permanently lost.
+const MAX_ENRICH_LOOKUPS = 300;
 const MAX_LIVE_BGG_CALLS = 25;
 
 export async function POST(request: NextRequest) {
   try {
-    const { games: rawGames } = await request.json();
+    const { games } = await request.json();
 
-    if (!rawGames || !Array.isArray(rawGames)) {
+    if (!games || !Array.isArray(games)) {
       return NextResponse.json({ error: 'Games array required' }, { status: 400 });
     }
-
-    const games = rawGames.slice(0, MAX_GAMES);
 
     const enrichedGames = [];
     const errors = [];
     let cacheHits = 0;
     let apiCalls = 0;
+    let lookups = 0;
 
     // Process each game
     for (const game of games) {
       try {
         // Skip if game doesn't have a BGG ID
         if (!game.bggId) {
+          enrichedGames.push(game);
+          continue;
+        }
+
+        // Past the lookup budget, pass the game through untouched (still returned,
+        // so the library is never truncated). The nightly cron fills these in.
+        if (lookups >= MAX_ENRICH_LOOKUPS) {
           enrichedGames.push(game);
           continue;
         }
@@ -69,7 +75,8 @@ export async function POST(request: NextRequest) {
           continue;
         }
 
-        // First, try Supabase cache
+        // First, try Supabase cache (counts against the lookup budget).
+        lookups++;
         const cachedGame = await getGameDetails(game.bggId);
 
         if (cachedGame && (cachedGame.image || cachedGame.thumbnail)) {

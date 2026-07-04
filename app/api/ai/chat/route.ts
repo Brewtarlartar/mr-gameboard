@@ -6,7 +6,7 @@ import { buildHydratedGameContext } from '@/lib/ai/gameContext';
 import { getRulebookAttachment } from '@/lib/ai/rulebook_attach';
 import { textStreamToResponse } from '@/lib/ai/stream';
 import { checkRateLimit, rateLimitResponse } from '@/lib/rate-limit';
-import { checkChatSize } from '@/lib/ai/limits';
+import { checkChatSize, AI_LIMITS, clampString } from '@/lib/ai/limits';
 import { createClient as createSupabaseServerClient } from '@/lib/supabase/server';
 
 export const runtime = 'nodejs';
@@ -60,7 +60,9 @@ export async function POST(req: NextRequest) {
     bggId ? buildHydratedGameContext(supabase, bggId, { gameName }) : Promise.resolve(null),
     bggId ? getRulebookAttachment(supabase, bggId) : Promise.resolve(null),
   ]);
-  const resolvedContext = hydrated || gameContext;
+  // Cap the client-supplied context so it can't be used as an unbounded free-text
+  // channel into the model (the server-built `hydrated` context is already bounded).
+  const resolvedContext = hydrated || clampString(gameContext, AI_LIMITS.chat.maxContextChars);
 
   const groundedFirst =
     resolvedContext && cleaned[0].role === 'user'

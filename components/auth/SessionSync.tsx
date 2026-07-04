@@ -20,28 +20,32 @@ const STORAGE_KEYS = {
   CUSTOM_GAMES: 'mr-boardgame-custom-games',
 } as const;
 
-// Every local key that holds a signed-in user's personal data. Cleared on
-// sign-out so the next account (or an anonymous user) on the same device can't
-// inherit it — and, critically, so the previous user's local library isn't
-// merged and uploaded into a different account on the next sign-in.
-const LOCAL_USER_DATA_KEYS = [
+// Only the keys that are MIRRORED TO THE SERVER. These are the ones that cause
+// cross-account bleed: on the next sign-in, SessionSync reads them from
+// localStorage, merges them, and uploads them into whatever account signs in.
+// Clearing them on sign-out prevents that — and it's safe because the server
+// holds the copy, so the signed-out user's data returns when they sign back in.
+//
+// We deliberately do NOT clear the local-only stores here (wishlist,
+// play-history, play-session draft, AI caches). Those never sync to the server,
+// so wiping them on sign-out (which also fires on silent token expiry) would
+// permanently destroy data with no way to restore it, and they don't upload into
+// another account anyway. They stay on the device; "Clear all data" on the Me tab
+// is the deliberate way to erase them.
+const SYNCED_KEYS = [
   'mr-boardgame-library',
   'mr-boardgame-favorites',
   'mr-boardgame-custom-games',
   'mr-boardgame-preferences',
-  'wishlist-storage',
-  'play-history-storage',
-  'play-session-draft',
-  'mr-gameboard-ai',
 ] as const;
 
 /**
- * Wipe local personal data on sign-out. LOCAL ONLY — the server copy is
- * intentionally preserved so the user's data returns when they sign back in.
+ * Clear the server-mirrored local data on sign-out. LOCAL ONLY — the server copy
+ * is preserved so the user's data returns when they sign back in.
  */
 function clearLocalUserData() {
   if (typeof window === 'undefined') return;
-  for (const key of LOCAL_USER_DATA_KEYS) {
+  for (const key of SYNCED_KEYS) {
     try {
       localStorage.removeItem(key);
     } catch {

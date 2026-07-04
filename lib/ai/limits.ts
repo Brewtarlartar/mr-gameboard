@@ -6,7 +6,7 @@
  */
 
 export const AI_LIMITS = {
-  chat: { maxMessages: 40, maxTotalChars: 24_000, maxMessageChars: 12_000 },
+  chat: { maxMessages: 40, maxTotalChars: 24_000, maxMessageChars: 12_000, maxContextChars: 8_000 },
   teach: { maxPlayers: 12, maxNameChars: 120, maxGameNameChars: 200 },
   strategy: { maxGameNameChars: 200, maxFactionChars: 200 },
 } as const;

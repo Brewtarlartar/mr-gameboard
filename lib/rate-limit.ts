@@ -70,9 +70,12 @@ export type RateLimitResult = { ok: true } | RateLimitDeny;
 // dev we fail open so the app is usable without provisioning Upstash.
 let warnedUnconfigured = false;
 function limiterUnavailable(): RateLimitResult {
+  // Fail closed only in real production (Vercel prod, or a non-Vercel prod build).
+  // Vercel PREVIEW deployments and local dev fail open so they stay usable without
+  // provisioning Redis.
   const isProd =
     process.env.VERCEL_ENV === 'production' ||
-    (process.env.NODE_ENV === 'production' && process.env.VERCEL === '1');
+    (process.env.NODE_ENV === 'production' && !process.env.VERCEL);
   if (!warnedUnconfigured) {
     warnedUnconfigured = true;
     console.error(
