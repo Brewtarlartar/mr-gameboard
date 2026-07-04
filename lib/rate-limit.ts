@@ -64,6 +64,33 @@ export type RateLimitDeny = {
 
 export type RateLimitResult = { ok: true } | RateLimitDeny;
 
+// When Redis isn't configured we can't enforce limits. In production that must
+// FAIL CLOSED — an unconfigured limiter would otherwise silently grant every
+// anonymous caller unlimited access to the (billed) Anthropic API. In local
+// dev we fail open so the app is usable without provisioning Upstash.
+let warnedUnconfigured = false;
+function limiterUnavailable(): RateLimitResult {
+  const isProd =
+    process.env.VERCEL_ENV === 'production' ||
+    (process.env.NODE_ENV === 'production' && process.env.VERCEL === '1');
+  if (!warnedUnconfigured) {
+    warnedUnconfigured = true;
+    console.error(
+      '[rate-limit] Redis not configured (KV_REST_API_URL / UPSTASH_REDIS_REST_URL missing).' +
+        (isProd ? ' Failing CLOSED in production.' : ' Failing open in development.'),
+    );
+  }
+  if (isProd) {
+    return {
+      ok: false,
+      scope: 'minute',
+      retryAfterSeconds: 60,
+      message: 'The Tome is briefly unavailable. Please try again in a moment.',
+    };
+  }
+  return { ok: true };
+}
+
 export async function checkRateLimit(
   req: NextRequest,
   route: RouteKey,
@@ -75,7 +102,7 @@ export async function checkRateLimit(
   const tier = signedIn ? 'signedin' : 'anon';
 
   const perMinute = getLimiter(`${route}:${tier}:min`, limits.minute, '1 m');
-  if (!perMinute) return { ok: true };
+  if (!perMinute) return limiterUnavailable();
 
   const minResult = await perMinute.limit(key);
   if (!minResult.success) {
@@ -90,7 +117,7 @@ export async function checkRateLimit(
   }
 
   const perDay = getLimiter(`${route}:${tier}:day`, limits.day, '1 d');
-  if (!perDay) return { ok: true };
+  if (!perDay) return limiterUnavailable();
 
   const dayResult = await perDay.limit(key);
   if (!dayResult.success) {

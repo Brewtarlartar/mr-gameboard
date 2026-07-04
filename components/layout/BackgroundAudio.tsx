@@ -100,7 +100,9 @@ export default function BackgroundAudio() {
 
   return (
     <>
-      <audio ref={audioRef} src="/The_Wizards_Hearth.m4a" loop preload="auto" />
+      {/* preload="none": the 3MB track is fetched only when playback actually
+          starts (on a user gesture), not on every page load for muted users. */}
+      <audio ref={audioRef} src="/The_Wizards_Hearth.m4a" loop preload="none" />
       <button
         onClick={toggleMuted}
         aria-label={isMuted ? 'Unmute background music' : 'Mute background music'}

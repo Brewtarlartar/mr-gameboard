@@ -26,13 +26,23 @@ function applyStapleOverlay<T extends Partial<Game>>(game: T): T {
  * This will fetch full data for games that have missing or incomplete descriptions
  * Tries Supabase cache first, then falls back to BGG API if needed
  */
+// This endpoint is public and does a live BGG fetch per cache-miss. Bound both
+// the array size (so we never iterate an unbounded list) and the number of live
+// BGG calls (so a request full of uncached ids can't hammer BGG from our IPs).
+// Every game is still returned — games past the budget just pass through
+// unenriched, so callers that replace the library with the response never lose rows.
+const MAX_GAMES = 500;
+const MAX_LIVE_BGG_CALLS = 25;
+
 export async function POST(request: NextRequest) {
   try {
-    const { games } = await request.json();
+    const { games: rawGames } = await request.json();
 
-    if (!games || !Array.isArray(games)) {
+    if (!rawGames || !Array.isArray(rawGames)) {
       return NextResponse.json({ error: 'Games array required' }, { status: 400 });
     }
+
+    const games = rawGames.slice(0, MAX_GAMES);
 
     const enrichedGames = [];
     const errors = [];
@@ -87,18 +97,37 @@ export async function POST(request: NextRequest) {
           continue;
         }
 
-        // If not in cache, try BGG API as fallback
+        // If not in cache, try BGG API as fallback — but only within the live-call
+        // budget. Past it, pass the game through unenriched (the nightly cron will
+        // fill these in) rather than making unbounded outbound requests.
+        if (apiCalls >= MAX_LIVE_BGG_CALLS) {
+          enrichedGames.push(game);
+          continue;
+        }
         apiCalls++;
-        
-        const response = await fetch(
-          `https://boardgamegeek.com/xmlapi2/thing?id=${game.bggId}&stats=1`,
-          {
-            headers: {
-              'Accept': 'application/xml',
-              'User-Agent': 'BoardGameCompanion/1.0',
-            },
-          }
-        );
+
+        // Authorize + time-bound the BGG call. Anonymous requests now 401, and an
+        // untimed fetch can pin the serverless function for its whole duration.
+        const bggToken = process.env.BGG_API_TOKEN?.trim();
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 8000);
+        let response: Response;
+        try {
+          response = await fetch(
+            `https://boardgamegeek.com/xmlapi2/thing?id=${game.bggId}&stats=1`,
+            {
+              headers: {
+                'Accept': 'application/xml',
+                'User-Agent': process.env.BGG_USER_AGENT || 'TheTome/1.0 (mr-gameboard)',
+                ...(bggToken ? { Authorization: `Bearer ${bggToken}` } : {}),
+              },
+              signal: controller.signal,
+              cache: 'no-store',
+            }
+          );
+        } finally {
+          clearTimeout(timeout);
+        }
 
         if (!response.ok) {
           console.error(`[Enrich] BGG API error ${response.status} for ${game.name}`);

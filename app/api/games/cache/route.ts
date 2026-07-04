@@ -7,28 +7,13 @@ export const dynamic = 'force-dynamic';
 
 interface CachePayload {
   bggId?: number;
-  game?: {
-    bggId?: number;
-    name?: string;
-    description?: string;
-    image?: string;
-    thumbnail?: string;
-    minPlayers?: number;
-    maxPlayers?: number;
-    playingTime?: number;
-    minPlayingTime?: number;
-    maxPlayingTime?: number;
-    complexity?: number;
-    rating?: number;
-    yearPublished?: number;
-    rank?: number;
-    categories?: string[];
-    genres?: string[];
-    mechanics?: string[];
-    designers?: string[];
-    artists?: string[];
-    publishers?: string[];
-  };
+  // NOTE: a `game` field may still be sent by older clients, but its contents
+  // are deliberately IGNORED. This endpoint is public and writes to the global
+  // catalog with the service-role key, so it must never trust client-supplied
+  // game data (that path allowed anyone to overwrite any game's name/description/
+  // images for all users and inject prompt-injection text into every AI answer).
+  // We only accept the bggId and fetch the authoritative record from BGG ourselves.
+  game?: { bggId?: number };
 }
 
 function getServiceClient() {
@@ -40,8 +25,9 @@ function getServiceClient() {
 }
 
 /**
- * Upsert a game into bgg_games_cache so it lives on our server.
- * If the payload is sparse, fall back to BGG live fetch and store the result.
+ * Warm bgg_games_cache for a single game. The only trusted input is the BGG id;
+ * the authoritative record is always fetched server-side from BGG. If the row is
+ * already rich, this is a no-op.
  */
 export async function POST(req: NextRequest) {
   let body: CachePayload;
@@ -51,8 +37,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid JSON' }, { status: 400 });
   }
 
-  const bggId = body.bggId ?? body.game?.bggId;
-  if (!bggId || !Number.isFinite(bggId)) {
+  const bggId = Number(body.bggId ?? body.game?.bggId);
+  if (!bggId || !Number.isFinite(bggId) || bggId <= 0) {
     return NextResponse.json({ error: 'bggId required' }, { status: 400 });
   }
 
@@ -62,79 +48,34 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const { data: existing } = await supabase
-      .from('bgg_games_cache')
-      .select('bgg_id, description, image')
-      .eq('bgg_id', bggId)
-      .maybeSingle();
-
-    const incoming = body.game || {};
-
-    const incomingHasGoodData =
-      incoming.name &&
-      incoming.description &&
-      incoming.description.length > 200 &&
-      (incoming.image || incoming.thumbnail);
-
-    const existingHasGoodData =
-      existing && existing.description && existing.description.length > 200 && existing.image;
-
-    if (existingHasGoodData && !incomingHasGoodData) {
-      return NextResponse.json({ ok: true, source: 'already-cached' });
+    // If we already hold a rich record, don't touch it or hit BGG again.
+    const cached = await getGameDetails(bggId);
+    const cachedIsRich =
+      cached && cached.description && cached.description.length > 200 && cached.image;
+    if (cachedIsRich) {
+      return NextResponse.json({ ok: true, source: 'cache-hit' });
     }
 
-    let payload: any = null;
-
-    if (incomingHasGoodData) {
-      payload = {
-        bgg_id: bggId,
-        name: incoming.name,
-        description: incoming.description,
-        image: incoming.image ?? null,
-        thumbnail: incoming.thumbnail ?? null,
-        min_players: incoming.minPlayers ?? null,
-        max_players: incoming.maxPlayers ?? null,
-        playing_time: incoming.playingTime ?? null,
-        min_playing_time: incoming.minPlayingTime ?? null,
-        max_playing_time: incoming.maxPlayingTime ?? null,
-        complexity: incoming.complexity ?? null,
-        rating: incoming.rating ?? null,
-        year_published: incoming.yearPublished ?? null,
-        rank: incoming.rank ?? null,
-        categories: incoming.categories ?? incoming.genres ?? [],
-        mechanics: incoming.mechanics ?? [],
-        designers: incoming.designers ?? [],
-        artists: incoming.artists ?? [],
-        publishers: incoming.publishers ?? [],
-        last_synced_at: new Date().toISOString(),
-      };
-    } else {
-      // Sparse client payload — only refetch from BGG if the cache row is also sparse.
-      const cached = await getGameDetails(bggId);
-      const cachedIsRich =
-        cached && cached.description && cached.description.length > 200 && cached.image;
-      if (cachedIsRich) {
-        return NextResponse.json({ ok: true, source: 'cache-hit' });
-      }
-
-      payload = await fetchBggThing(bggId);
-      if (!payload) {
-        return NextResponse.json(
-          { ok: false, error: 'Unable to fetch from BGG (token may be missing or BGG unreachable)' },
-          { status: 502 },
-        );
-      }
+    // Fetch the authoritative record ourselves — never trust the client payload.
+    const payload = await fetchBggThing(bggId);
+    if (!payload) {
+      return NextResponse.json(
+        { ok: false, error: 'Unable to fetch from BGG (token may be missing or BGG unreachable)' },
+        { status: 502 },
+      );
     }
 
+    // Never write a null rulebook_url over a curated value (Phase B data).
+    const { rulebook_url: _drop, ...row } = payload;
     const { error } = await supabase
       .from('bgg_games_cache')
-      .upsert(payload, { onConflict: 'bgg_id' });
+      .upsert(row, { onConflict: 'bgg_id' });
 
     if (error) {
       return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ ok: true, source: incomingHasGoodData ? 'client-payload' : 'bgg-live' });
+    return NextResponse.json({ ok: true, source: 'bgg-live' });
   } catch (err) {
     return NextResponse.json(
       { ok: false, error: err instanceof Error ? err.message : 'Unknown error' },

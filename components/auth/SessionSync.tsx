@@ -20,6 +20,39 @@ const STORAGE_KEYS = {
   CUSTOM_GAMES: 'mr-boardgame-custom-games',
 } as const;
 
+// Every local key that holds a signed-in user's personal data. Cleared on
+// sign-out so the next account (or an anonymous user) on the same device can't
+// inherit it — and, critically, so the previous user's local library isn't
+// merged and uploaded into a different account on the next sign-in.
+const LOCAL_USER_DATA_KEYS = [
+  'mr-boardgame-library',
+  'mr-boardgame-favorites',
+  'mr-boardgame-custom-games',
+  'mr-boardgame-preferences',
+  'wishlist-storage',
+  'play-history-storage',
+  'play-session-draft',
+  'mr-gameboard-ai',
+] as const;
+
+/**
+ * Wipe local personal data on sign-out. LOCAL ONLY — the server copy is
+ * intentionally preserved so the user's data returns when they sign back in.
+ */
+function clearLocalUserData() {
+  if (typeof window === 'undefined') return;
+  for (const key of LOCAL_USER_DATA_KEYS) {
+    try {
+      localStorage.removeItem(key);
+    } catch {
+      /* ignore */
+    }
+  }
+  // Reset the in-memory game store so the UI reflects the wipe immediately
+  // (localStorage removal alone doesn't clear already-loaded state).
+  useGameStore.setState({ games: [], favorites: [], customGames: [] });
+}
+
 /**
  * Hidden component that listens for Supabase auth state changes and reconciles
  * localStorage with the server on sign-in. Mount once in the (main) layout.
@@ -75,6 +108,7 @@ export default function SessionSync() {
         void run(session.user.id);
       } else if (event === 'SIGNED_OUT') {
         hydratedUserIdRef.current = null;
+        clearLocalUserData();
       }
     });
 

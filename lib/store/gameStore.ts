@@ -36,6 +36,7 @@ interface GameStore {
   discoverCategories: DiscoverCategories | null;
   allDiscoverGames: SeedGame[];
   discoverLoaded: boolean;
+  discoverError: boolean;
 
   // Chat state
   chatMessages: ChatMessage[];
@@ -50,6 +51,7 @@ interface GameStore {
   // Actions
   loadLibrary: () => void;
   loadDiscoverGames: () => Promise<void>;
+  retryDiscover: () => Promise<void>;
   addGame: (game: Game) => void;
   addGameFromSeed: (seedGame: SeedGame) => void;
   removeGame: (gameId: string) => void;
@@ -77,6 +79,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   discoverCategories: null,
   allDiscoverGames: [],
   discoverLoaded: false,
+  discoverError: false,
   chatMessages: [],
   currentSession: null,
   
@@ -97,7 +100,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   loadDiscoverGames: async () => {
     if (get().discoverLoaded) return;
-    
+
     try {
       // Fetch the seed games data from the API
       const response = await fetch('/api/discover');
@@ -107,14 +110,22 @@ export const useGameStore = create<GameStore>((set, get) => ({
           discoverCategories: data.categories || null,
           allDiscoverGames: data.allGames || [],
           discoverLoaded: true,
+          discoverError: false,
         });
       } else {
         throw new Error('Failed to fetch discover games');
       }
     } catch (error) {
       console.error('Failed to load discover games:', error);
-      set({ discoverLoaded: true }); // Mark as loaded even on error to prevent retries
+      // Mark as loaded (so the mount effect stops re-firing) but flag the error
+      // so the UI can show a retry affordance instead of a permanently blank page.
+      set({ discoverLoaded: true, discoverError: true });
     }
+  },
+
+  retryDiscover: async () => {
+    set({ discoverLoaded: false, discoverError: false });
+    await get().loadDiscoverGames();
   },
 
   addGame: (game: Game) => {

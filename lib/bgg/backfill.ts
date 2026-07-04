@@ -33,9 +33,15 @@ function getServiceClient() {
 export async function upsertBggRow(row: BggCacheRow): Promise<void> {
   const supabase = getServiceClient();
   if (!supabase) return;
+  // Strip rulebook_url before upserting. A live BGG /thing fetch never carries a
+  // rulebook URL (it's always null), so including it here would overwrite the
+  // curated Phase B rulebook links on every public write path (add-by-link,
+  // detail backfill, search enrichment). Leaving the column out preserves any
+  // existing value on the row.
+  const { rulebook_url: _omitRulebookUrl, ...writable } = row;
   const { error } = await supabase
     .from('bgg_games_cache')
-    .upsert(row, { onConflict: 'bgg_id' });
+    .upsert(writable, { onConflict: 'bgg_id' });
   if (error) console.warn(`[BGG backfill] upsert ${row.bgg_id}:`, error.message);
 }
 

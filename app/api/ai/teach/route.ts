@@ -6,6 +6,7 @@ import { buildHydratedGameContext } from '@/lib/ai/gameContext';
 import { getRulebookAttachment } from '@/lib/ai/rulebook_attach';
 import type { TeachPlan, TeachChapter, TeachPlayer } from '@/lib/ai/types';
 import { checkRateLimit, rateLimitResponse } from '@/lib/rate-limit';
+import { AI_LIMITS, clampString } from '@/lib/ai/limits';
 import { createClient as createSupabaseServerClient } from '@/lib/supabase/server';
 
 const FILES_BETA = 'files-api-2025-04-14';
@@ -66,9 +67,20 @@ export async function POST(req: NextRequest) {
       status: 400,
     });
   }
+  if (players.length > AI_LIMITS.teach.maxPlayers) {
+    return new Response(`Too many players (max ${AI_LIMITS.teach.maxPlayers}).`, {
+      status: 413,
+    });
+  }
   const resolvedVoice: AiVoice = voice === 'plain' ? 'plain' : 'wizard';
 
-  const extras = { gameName, playerCount, players };
+  // Cap free-text inputs so they can't bloat the prompt (they're interpolated verbatim).
+  const safeGameName = clampString(gameName, AI_LIMITS.teach.maxGameNameChars);
+  const safePlayers = players.slice(0, AI_LIMITS.teach.maxPlayers).map((p) => ({
+    ...p,
+    name: clampString(p?.name, AI_LIMITS.teach.maxNameChars),
+  }));
+  const extras = { gameName: safeGameName, playerCount, players: safePlayers };
   const [hydrated, rulebook] = await Promise.all([
     bggId ? buildHydratedGameContext(supabase, bggId, extras) : Promise.resolve(null),
     bggId ? getRulebookAttachment(supabase, bggId) : Promise.resolve(null),

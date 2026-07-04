@@ -6,6 +6,7 @@ import { buildHydratedGameContext } from '@/lib/ai/gameContext';
 import { getRulebookAttachment } from '@/lib/ai/rulebook_attach';
 import { textStreamToResponse } from '@/lib/ai/stream';
 import { checkRateLimit, rateLimitResponse } from '@/lib/rate-limit';
+import { checkChatSize } from '@/lib/ai/limits';
 import { createClient as createSupabaseServerClient } from '@/lib/supabase/server';
 
 export const runtime = 'nodejs';
@@ -37,6 +38,10 @@ export async function POST(req: NextRequest) {
   const { messages, gameContext, bggId, gameName, voice } = body;
   if (!Array.isArray(messages) || messages.length === 0) {
     return new Response('messages[] is required', { status: 400 });
+  }
+  const sizeError = checkChatSize(messages);
+  if (sizeError) {
+    return new Response(sizeError, { status: 413 });
   }
   const resolvedVoice: AiVoice = voice === 'plain' ? 'plain' : 'wizard';
 
