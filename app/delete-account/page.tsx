@@ -130,4 +130,4 @@ export default function DeleteAccountPage() {
   );
 }
 
-const SUPPORT_EMAIL = 'support@thetome.app';
+const SUPPORT_EMAIL = 'javiermaciasproperties@gmail.com';

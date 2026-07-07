@@ -110,7 +110,7 @@ export default function PrivacyPage() {
       </section>
 
       <p className="text-[11px] text-amber-200/50 font-serif italic">
-        Questions or requests? Contact support@thetome.app.
+        Questions or requests? Contact javiermaciasproperties@gmail.com.
       </p>
     </div>
   );
