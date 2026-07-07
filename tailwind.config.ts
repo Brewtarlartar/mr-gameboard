@@ -65,7 +65,12 @@ const config: Config = {
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
-        display: ['Plus Jakarta Sans', 'Inter', 'system-ui', 'sans-serif'],
+        // `serif` was never defined, so the ~368 `font-serif` classes across the
+        // app silently fell back to Times/Georgia. EB Garamond is the app's book
+        // serif (narrative + most titles); `display` is Cinzel for brand-mark
+        // headings (the base h1–h6 rule and the logo use font-display).
+        serif: ['EB Garamond', 'Iowan Old Style', 'Palatino', 'Georgia', 'serif'],
+        display: ['Cinzel', 'EB Garamond', 'Georgia', 'serif'],
         body: ['Inter', 'system-ui', 'sans-serif'],
         ui: ['Inter', 'system-ui', 'sans-serif'],
         mono: ['Fira Code', 'Consolas', 'Monaco', 'Courier New', 'monospace'],

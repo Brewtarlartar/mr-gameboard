@@ -22,7 +22,7 @@ export default function TermsPage() {
         </h1>
       </div>
       <p className="text-amber-200/70 text-sm font-serif italic">
-        The short-form covenant. Last updated April 2026.
+        The short-form covenant. Last updated July 2026.
       </p>
 
       <section className="bg-gradient-to-b from-stone-900/80 to-stone-950/80 border border-amber-900/50 rounded-2xl p-5 space-y-3 text-amber-100/85 text-sm font-serif leading-relaxed">
@@ -30,9 +30,14 @@ export default function TermsPage() {
           What thou may do
         </h2>
         <p>
-          Use The Tome for personal, non-commercial tracking of thy board game
-          collection, play sessions, and gameplay questions. Thou may share
-          screenshots and session summaries as thou wishest.
+          Use The Tome for personal tracking of thy board game collection, play
+          sessions, and gameplay questions. Thou may share screenshots and session
+          summaries as thou wishest. Thou must be at least 13 years of age (or the
+          minimum age of digital consent in thy region) to hold an account.
+        </p>
+        <p>
+          Do not misuse the service — no automated abuse of the AI features, no
+          attempts to overwhelm or reverse the servers, and nothing unlawful.
         </p>
       </section>
 
@@ -62,8 +67,8 @@ export default function TermsPage() {
           displays this information for reference; it does not claim ownership.
         </p>
         <p>
-          Game data is sourced from BoardGameGeek&apos;s XML API under a
-          commercial license.
+          Game data is sourced from BoardGameGeek&apos;s XML API and displayed with
+          attribution in accordance with BoardGameGeek&apos;s API terms of use.
         </p>
         <div className="pt-2">
           <BggAttribution size="md" />
@@ -72,12 +77,39 @@ export default function TermsPage() {
 
       <section className="bg-gradient-to-b from-stone-900/80 to-stone-950/80 border border-amber-900/50 rounded-2xl p-5 space-y-3 text-amber-100/85 text-sm font-serif leading-relaxed">
         <h2 className="text-xs font-serif font-semibold text-amber-200 uppercase tracking-widest">
+          Affiliate links
+        </h2>
+        <p>
+          Some &ldquo;buy&rdquo; links are Amazon affiliate links. As an Amazon Associate,
+          The Tome may earn a small commission from qualifying purchases, at no extra
+          cost to thee. This never affects which games we show or recommend.
+        </p>
+      </section>
+
+      <section className="bg-gradient-to-b from-stone-900/80 to-stone-950/80 border border-amber-900/50 rounded-2xl p-5 space-y-3 text-amber-100/85 text-sm font-serif leading-relaxed">
+        <h2 className="text-xs font-serif font-semibold text-amber-200 uppercase tracking-widest">
+          Accounts &amp; termination
+        </h2>
+        <p>
+          Thou may delete thy account at any time from the Me tab or at{' '}
+          <Link href="/delete-account" className="text-amber-300 underline underline-offset-2">
+            /delete-account
+          </Link>
+          . We may suspend or end access that abuses the service or breaks these terms.
+        </p>
+      </section>
+
+      <section className="bg-gradient-to-b from-stone-900/80 to-stone-950/80 border border-amber-900/50 rounded-2xl p-5 space-y-3 text-amber-100/85 text-sm font-serif leading-relaxed">
+        <h2 className="text-xs font-serif font-semibold text-amber-200 uppercase tracking-widest">
           No warranty
         </h2>
         <p>
-          The Tome is provided as-is. If a scribed session vanishes due to a
-          device wipe, or the Sage gives a creative ruling, the maintainer
-          accepts no liability beyond a sincere apology.
+          The Tome is provided &ldquo;as is,&rdquo; without warranties of any kind, and
+          to the extent permitted by law the maintainer is not liable for lost data
+          or for reliance on an AI-generated ruling. If a scribed session vanishes due
+          to a device wipe, or the Sage gives a creative ruling, the remedy is a sincere
+          apology. These terms are governed by the laws of the maintainer&apos;s place of
+          residence.
         </p>
       </section>
     </div>

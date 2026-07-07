@@ -50,6 +50,7 @@ interface GameStore {
   // Actions
   loadLibrary: () => void;
   loadDiscoverGames: () => Promise<void>;
+  retryDiscover: () => Promise<void>;
   addGame: (game: Game) => void;
   addGameFromSeed: (seedGame: SeedGame) => void;
   removeGame: (gameId: string) => void;
@@ -97,7 +98,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   loadDiscoverGames: async () => {
     if (get().discoverLoaded) return;
-    
+
     try {
       // Fetch the seed games data from the API
       const response = await fetch('/api/discover');
@@ -113,8 +114,16 @@ export const useGameStore = create<GameStore>((set, get) => ({
       }
     } catch (error) {
       console.error('Failed to load discover games:', error);
-      set({ discoverLoaded: true }); // Mark as loaded even on error to prevent retries
+      // Mark as loaded (so the mount effect stops re-firing). discoverCategories
+      // stays null, which the Catalog UI renders as a retry affordance instead of
+      // a permanently blank page.
+      set({ discoverLoaded: true });
     }
+  },
+
+  retryDiscover: async () => {
+    set({ discoverLoaded: false });
+    await get().loadDiscoverGames();
   },
 
   addGame: (game: Game) => {

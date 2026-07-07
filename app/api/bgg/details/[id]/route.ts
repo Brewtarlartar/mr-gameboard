@@ -1,6 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as cheerio from 'cheerio';
 
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+// BGG now rejects anonymous XML API requests with 401. Every call must send the
+// application token as a Bearer header (to boardgamegeek.com, not www).
+function bggHeaders(): Record<string, string> {
+  const headers: Record<string, string> = {
+    'User-Agent': process.env.BGG_USER_AGENT || 'TheTome/1.0 (mr-gameboard)',
+    'Accept': 'application/xml, text/xml, */*',
+  };
+  const token = process.env.BGG_API_TOKEN?.trim();
+  if (token) headers.Authorization = `Bearer ${token}`;
+  return headers;
+}
+
 interface BGGComment {
   username: string;
   rating: number | null;
@@ -38,12 +53,7 @@ async function fetchGameDetails(gameId: string): Promise<BGGGameDetails | null> 
   try {
     // Fetch basic game info with stats
     const xmlUrl = `https://boardgamegeek.com/xmlapi2/thing?id=${gameId}&stats=1`;
-    const response = await fetch(xmlUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
-        'Accept': 'application/xml',
-      },
-    });
+    const response = await fetch(xmlUrl, { headers: bggHeaders(), cache: 'no-store' });
 
     if (!response.ok) {
       console.error(`BGG XML API error: ${response.status}`);
@@ -160,12 +170,7 @@ async function fetchGameDetails(gameId: string): Promise<BGGGameDetails | null> 
 async function fetchGameComments(gameId: string): Promise<BGGComment[]> {
   try {
     const commentsUrl = `https://boardgamegeek.com/xmlapi2/thing?id=${gameId}&comments=1&pagesize=10`;
-    const response = await fetch(commentsUrl, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
-        'Accept': 'application/xml',
-      },
-    });
+    const response = await fetch(commentsUrl, { headers: bggHeaders(), cache: 'no-store' });
 
     if (!response.ok) return [];
 

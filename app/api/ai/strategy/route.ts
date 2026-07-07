@@ -4,6 +4,7 @@ import { strategySystem, buildGameContext, type AiVoice } from '@/lib/ai/prompts
 import { buildHydratedGameContext } from '@/lib/ai/gameContext';
 import { textStreamToResponse } from '@/lib/ai/stream';
 import { checkRateLimit, rateLimitResponse } from '@/lib/rate-limit';
+import { AI_LIMITS, clampString } from '@/lib/ai/limits';
 import { createClient as createSupabaseServerClient } from '@/lib/supabase/server';
 
 export const runtime = 'nodejs';
@@ -32,8 +33,8 @@ export async function POST(req: NextRequest) {
   }
 
   const { gameName, faction, depth, voice, bggId } = body;
-  const gName = typeof gameName === 'string' ? gameName.trim() : '';
-  const factionTrimmed = typeof faction === 'string' ? faction.trim() : '';
+  const gName = clampString(gameName, AI_LIMITS.strategy.maxGameNameChars).trim();
+  const factionTrimmed = clampString(faction, AI_LIMITS.strategy.maxFactionChars).trim();
   if (!gName || (depth !== 'overview' && depth !== 'deep')) {
     return new Response('gameName and depth are required', { status: 400 });
   }

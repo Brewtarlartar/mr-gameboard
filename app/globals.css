@@ -1,8 +1,11 @@
+/* Font @import MUST come before the Tailwind layers. CSS ignores any @import
+   that follows other rules, which silently dropped the brand fonts in every
+   compiled build. */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Cinzel:wght@600;700;800;900&family=EB+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Cinzel:wght@600;700;800;900&display=swap');
 
 :root {
   --bg-primary: #fbf5ea;
@@ -32,7 +35,7 @@
 
   --tavern-overlay: rgba(28, 16, 10, 0.55);
 
-  --font-display: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-display: 'Cinzel', 'EB Garamond', Georgia, serif;
   --font-body: 'Inter', system-ui, sans-serif;
   --font-ui: 'Inter', system-ui, sans-serif;
 }

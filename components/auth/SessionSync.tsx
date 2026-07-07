@@ -20,6 +20,43 @@ const STORAGE_KEYS = {
   CUSTOM_GAMES: 'mr-boardgame-custom-games',
 } as const;
 
+// Only the keys that are MIRRORED TO THE SERVER. These are the ones that cause
+// cross-account bleed: on the next sign-in, SessionSync reads them from
+// localStorage, merges them, and uploads them into whatever account signs in.
+// Clearing them on sign-out prevents that — and it's safe because the server
+// holds the copy, so the signed-out user's data returns when they sign back in.
+//
+// We deliberately do NOT clear the local-only stores here (wishlist,
+// play-history, play-session draft, AI caches). Those never sync to the server,
+// so wiping them on sign-out (which also fires on silent token expiry) would
+// permanently destroy data with no way to restore it, and they don't upload into
+// another account anyway. They stay on the device; "Clear all data" on the Me tab
+// is the deliberate way to erase them.
+const SYNCED_KEYS = [
+  'mr-boardgame-library',
+  'mr-boardgame-favorites',
+  'mr-boardgame-custom-games',
+  'mr-boardgame-preferences',
+] as const;
+
+/**
+ * Clear the server-mirrored local data on sign-out. LOCAL ONLY — the server copy
+ * is preserved so the user's data returns when they sign back in.
+ */
+function clearLocalUserData() {
+  if (typeof window === 'undefined') return;
+  for (const key of SYNCED_KEYS) {
+    try {
+      localStorage.removeItem(key);
+    } catch {
+      /* ignore */
+    }
+  }
+  // Reset the in-memory game store so the UI reflects the wipe immediately
+  // (localStorage removal alone doesn't clear already-loaded state).
+  useGameStore.setState({ games: [], favorites: [], customGames: [] });
+}
+
 /**
  * Hidden component that listens for Supabase auth state changes and reconciles
  * localStorage with the server on sign-in. Mount once in the (main) layout.
@@ -75,6 +112,7 @@ export default function SessionSync() {
         void run(session.user.id);
       } else if (event === 'SIGNED_OUT') {
         hydratedUserIdRef.current = null;
+        clearLocalUserData();
       }
     });
 

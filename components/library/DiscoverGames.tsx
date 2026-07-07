@@ -206,7 +206,25 @@ export default function DiscoverGames() {
     );
   }
 
-  if (!discoverCategories) return null;
+  if (!discoverCategories) {
+    return (
+      <div className="bg-gradient-to-b from-stone-900/70 to-stone-950/80 border border-amber-900/50 rounded-2xl p-8 sm:p-10 text-center shadow-lg shadow-black/30">
+        <div className="text-5xl mb-3">🗺️</div>
+        <h2 className="text-xl sm:text-2xl font-serif font-bold text-amber-100 mb-2">
+          The archive could not be reached
+        </h2>
+        <p className="text-amber-200/70 mb-5 font-serif italic max-w-sm mx-auto">
+          Something went awry fetching the catalog. Thy connection may have faltered.
+        </p>
+        <button
+          onClick={() => useGameStore.getState().retryDiscover()}
+          className="inline-flex items-center gap-2 px-5 py-2.5 bg-amber-500 hover:bg-amber-400 text-stone-950 font-serif font-semibold rounded-lg text-sm transition-colors"
+        >
+          Try again
+        </button>
+      </div>
+    );
+  }
 
   const visibleShelves = SHELVES.map((meta) => {
     const cat = discoverCategories[meta.key];

@@ -18,6 +18,9 @@ import {
 } from 'lucide-react';
 import { useGameStore } from '@/lib/store/gameStore';
 import { usePlayHistoryStore } from '@/lib/store/playHistoryStore';
+import { useWishlistStore } from '@/lib/store/wishlistStore';
+import { useAIStore } from '@/lib/store/aiStore';
+import { usePlaySessionStore } from '@/lib/store/playSessionStore';
 import { getPreferences, savePreferences } from '@/lib/storage';
 import { createClient } from '@/lib/supabase/client';
 
@@ -29,6 +32,9 @@ export default function MePage() {
   const [confirmClear, setConfirmClear] = useState(false);
   const [voice, setVoice] = useState<AiVoice>('wizard');
   const [userEmail, setUserEmail] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
 
   useEffect(() => {
     setVoice(getPreferences().aiVoice ?? 'wizard');
@@ -55,9 +61,42 @@ export default function MePage() {
   };
 
   const handleClearAll = () => {
+    // resetLibrary() clears the local library AND the server copy (via
+    // clearAllData -> clearAllServerData). Also wipe the other local-only
+    // stores so "Clear all data" truly leaves nothing behind.
     resetLibrary();
     clearHistory();
+    useWishlistStore.setState({ wishlist: [] });
+    useAIStore.setState({ wizardMessages: [], strategyCache: {} });
+    usePlaySessionStore.getState().clearDraft();
     setConfirmClear(false);
+  };
+
+  const handleDeleteAccount = async () => {
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      const res = await fetch('/api/account/delete', { method: 'POST' });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || `Deletion failed (${res.status})`);
+      }
+      // The account is gone at this point — reflect that immediately so a failing
+      // sign-out can't leave the UI looking signed-in.
+      setUserEmail(null);
+      setConfirmDelete(false);
+      // Wipe local data and clear the client session (best-effort).
+      handleClearAll();
+      try {
+        await createClient().auth.signOut();
+      } catch {
+        /* session is already invalid server-side; ignore */
+      }
+    } catch (e) {
+      setDeleteError(e instanceof Error ? e.message : 'Deletion failed');
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const totalHours = Math.round(
@@ -182,8 +221,8 @@ export default function MePage() {
         </h2>
         <p className="text-amber-100/80 text-sm font-serif leading-relaxed mb-2">
           The Tome is thy tabletop companion — keeper of thy library, guide through
-          games, and scribe of thy chronicles. It works fully offline and stores
-          everything on this very device.
+          games, and scribe of thy chronicles. Thy collection lives on this device,
+          and syncs across thy devices when thou signest in.
         </p>
         <p className="text-[11px] text-amber-200/50 font-serif italic">
           v1.0 · beta · Forged for tabletop nights and long campaigns alike.
@@ -282,6 +321,47 @@ export default function MePage() {
             <Trash2 className="w-4 h-4" />
             <span>Clear all data</span>
           </button>
+        )}
+
+        {userEmail && (
+          <div className="mt-5 pt-5 border-t border-red-900/40">
+            <p className="text-amber-100/75 text-sm font-serif mb-3 leading-relaxed">
+              Or delete thy account entirely — this removes thy sign-in and every trace
+              of thy data from our vaults, on this device and in the cloud. Final and
+              irreversible.
+            </p>
+            {confirmDelete ? (
+              <div className="flex flex-col gap-2">
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={handleDeleteAccount}
+                    disabled={deleting}
+                    className="px-4 py-2 bg-red-700 hover:bg-red-600 disabled:opacity-60 text-white font-serif font-semibold rounded-lg text-sm border border-red-500/50 transition-colors"
+                  >
+                    {deleting ? 'Deleting…' : 'Yes, delete my account'}
+                  </button>
+                  <button
+                    onClick={() => setConfirmDelete(false)}
+                    disabled={deleting}
+                    className="px-4 py-2 bg-stone-900 hover:bg-stone-800 border border-amber-900/50 text-amber-100 font-serif rounded-lg text-sm transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+                {deleteError && (
+                  <p className="text-red-300 font-serif text-xs">{deleteError}</p>
+                )}
+              </div>
+            ) : (
+              <button
+                onClick={() => setConfirmDelete(true)}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-red-950/60 hover:bg-red-900/70 border border-red-800/60 text-red-200 font-serif rounded-lg text-sm transition-colors"
+              >
+                <Trash2 className="w-4 h-4" />
+                <span>Delete my account</span>
+              </button>
+            )}
+          </div>
         )}
       </section>
     </div>

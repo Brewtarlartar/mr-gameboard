@@ -26,6 +26,14 @@ function applyStapleOverlay<T extends Partial<Game>>(game: T): T {
  * This will fetch full data for games that have missing or incomplete descriptions
  * Tries Supabase cache first, then falls back to BGG API if needed
  */
+// This endpoint is public and does a live BGG fetch per cache-miss. We bound the
+// expensive work — the number of Supabase reads (MAX_ENRICH_LOOKUPS) and live BGG
+// calls (MAX_LIVE_BGG_CALLS) — WITHOUT dropping any game from the response. Callers
+// (autoEnrichLibrary/enrichLibrary) overwrite the whole local library with what we
+// return, so every input game MUST come back or those rows are permanently lost.
+const MAX_ENRICH_LOOKUPS = 300;
+const MAX_LIVE_BGG_CALLS = 25;
+
 export async function POST(request: NextRequest) {
   try {
     const { games } = await request.json();
@@ -38,12 +46,20 @@ export async function POST(request: NextRequest) {
     const errors = [];
     let cacheHits = 0;
     let apiCalls = 0;
+    let lookups = 0;
 
     // Process each game
     for (const game of games) {
       try {
         // Skip if game doesn't have a BGG ID
         if (!game.bggId) {
+          enrichedGames.push(game);
+          continue;
+        }
+
+        // Past the lookup budget, pass the game through untouched (still returned,
+        // so the library is never truncated). The nightly cron fills these in.
+        if (lookups >= MAX_ENRICH_LOOKUPS) {
           enrichedGames.push(game);
           continue;
         }
@@ -59,7 +75,8 @@ export async function POST(request: NextRequest) {
           continue;
         }
 
-        // First, try Supabase cache
+        // First, try Supabase cache (counts against the lookup budget).
+        lookups++;
         const cachedGame = await getGameDetails(game.bggId);
 
         if (cachedGame && (cachedGame.image || cachedGame.thumbnail)) {
@@ -87,18 +104,37 @@ export async function POST(request: NextRequest) {
           continue;
         }
 
-        // If not in cache, try BGG API as fallback
+        // If not in cache, try BGG API as fallback — but only within the live-call
+        // budget. Past it, pass the game through unenriched (the nightly cron will
+        // fill these in) rather than making unbounded outbound requests.
+        if (apiCalls >= MAX_LIVE_BGG_CALLS) {
+          enrichedGames.push(game);
+          continue;
+        }
         apiCalls++;
-        
-        const response = await fetch(
-          `https://boardgamegeek.com/xmlapi2/thing?id=${game.bggId}&stats=1`,
-          {
-            headers: {
-              'Accept': 'application/xml',
-              'User-Agent': 'BoardGameCompanion/1.0',
-            },
-          }
-        );
+
+        // Authorize + time-bound the BGG call. Anonymous requests now 401, and an
+        // untimed fetch can pin the serverless function for its whole duration.
+        const bggToken = process.env.BGG_API_TOKEN?.trim();
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 8000);
+        let response: Response;
+        try {
+          response = await fetch(
+            `https://boardgamegeek.com/xmlapi2/thing?id=${game.bggId}&stats=1`,
+            {
+              headers: {
+                'Accept': 'application/xml',
+                'User-Agent': process.env.BGG_USER_AGENT || 'TheTome/1.0 (mr-gameboard)',
+                ...(bggToken ? { Authorization: `Bearer ${bggToken}` } : {}),
+              },
+              signal: controller.signal,
+              cache: 'no-store',
+            }
+          );
+        } finally {
+          clearTimeout(timeout);
+        }
 
         if (!response.ok) {
           console.error(`[Enrich] BGG API error ${response.status} for ${game.name}`);

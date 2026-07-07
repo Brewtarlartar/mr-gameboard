@@ -25,6 +25,7 @@ import {
 import { SeedGame } from '@/types/seedGame';
 import { useGameStore } from '@/lib/store/gameStore';
 import { useWishlistStore } from '@/lib/store/wishlistStore';
+import { sanitizeDescriptionHtml } from '@/lib/text/sanitizeHtml';
 
 interface BGGComment {
   username: string;
@@ -429,10 +430,11 @@ export default function GameDetailModal({
                       <div
                         className="text-amber-100/90 leading-relaxed font-serif text-sm sm:text-base [&_p]:mb-3 [&_em]:italic [&_strong]:font-semibold [&_strong]:text-amber-100 [&_a]:text-amber-300 [&_a:hover]:text-amber-200 [&_a:hover]:underline"
                         dangerouslySetInnerHTML={{
-                          __html:
+                          __html: sanitizeDescriptionHtml(
                             displayData.description.length > 2000
                               ? displayData.description.slice(0, 2000) + '…'
                               : displayData.description,
+                          ),
                         }}
                       />
                     ) : (

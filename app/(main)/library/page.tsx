@@ -26,6 +26,7 @@ export default function LibraryPage() {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [showCustomForm, setShowCustomForm] = useState(false);
   const [isAddingGame, setIsAddingGame] = useState(false);
+  const [addError, setAddError] = useState<string | null>(null);
   const [showOracleModal, setShowOracleModal] = useState(false);
   const [showCompareModal, setShowCompareModal] = useState(false);
   const [trendingData, setTrendingData] = useState<any>(null);
@@ -77,14 +78,20 @@ export default function LibraryPage() {
 
   const handleSearchSelect = async (bggId: number) => {
     setIsAddingGame(true);
+    setAddError(null);
     try {
       const response = await fetch(`/api/bgg/game/${bggId}`);
-      if (response.ok) {
-        const data = await response.json();
-        addGame(data.game);
+      if (!response.ok) {
+        throw new Error(`Server responded ${response.status}`);
       }
+      const data = await response.json();
+      if (!data?.game) {
+        throw new Error('No game data returned');
+      }
+      addGame(data.game);
     } catch (error) {
       console.error('Error adding game:', error);
+      setAddError('The Tome could not add that game just now. Please try again.');
     } finally {
       setIsAddingGame(false);
     }
@@ -206,9 +213,15 @@ export default function LibraryPage() {
 
       <div className="space-y-2">
         <GameSearch onSelectGame={handleSearchSelect} />
-        <p className="text-[11px] text-amber-200/50 italic font-serif px-1">
-          Or scroll down to browse the catalog and add games by category.
-        </p>
+        {addError ? (
+          <p className="text-[12px] text-red-300 font-serif px-1" role="alert">
+            {addError}
+          </p>
+        ) : (
+          <p className="text-[11px] text-amber-200/50 italic font-serif px-1">
+            Or scroll down to browse the catalog and add games by category.
+          </p>
+        )}
       </div>
 
       <div className="flex items-center gap-2 flex-wrap">
