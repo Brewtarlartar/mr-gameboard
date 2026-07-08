@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import { useDialogA11y } from '@/lib/hooks/useDialogA11y';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X,
@@ -87,18 +88,9 @@ export default function GameDetailModal({
     setMounted(true);
   }, []);
 
-  useEffect(() => {
-    if (!isOpen) return;
-    const originalOverflow = document.body.style.overflow;
-    const originalPaddingRight = document.body.style.paddingRight;
-    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
-    document.body.style.overflow = 'hidden';
-    document.body.style.paddingRight = `${scrollbarWidth}px`;
-    return () => {
-      document.body.style.overflow = originalOverflow;
-      document.body.style.paddingRight = originalPaddingRight;
-    };
-  }, [isOpen]);
+  // Focus trap + Escape + focus restore + body scroll lock.
+  const panelRef = useRef<HTMLDivElement>(null);
+  useDialogA11y(panelRef, { isOpen, onClose });
 
   useEffect(() => {
     if (isOpen && game?.bggId) {
@@ -154,14 +146,6 @@ export default function GameDetailModal({
     }
   };
 
-  useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    if (isOpen) document.addEventListener('keydown', handleEscape);
-    return () => document.removeEventListener('keydown', handleEscape);
-  }, [isOpen, onClose]);
-
   if (!game) return null;
 
   const displayData = {
@@ -198,11 +182,12 @@ export default function GameDetailModal({
             paddingBottom: 'max(calc(env(safe-area-inset-bottom, 0px) + 8px), 16px)',
           }}
           onClick={onClose}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="game-detail-title"
         >
           <motion.div
+            ref={panelRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="game-detail-title"
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}

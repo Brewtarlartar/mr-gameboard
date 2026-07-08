@@ -44,7 +44,7 @@ export default function PracticeRound({
         </div>
         <button
           onClick={reset}
-          className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-purple-50 border border-gray-200 hover:border-purple-300 text-gray-700 hover:text-purple-600 rounded-lg transition-all text-sm font-ui font-medium hover:scale-105 active:scale-95"
+          className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-stone-800/10 border border-gray-200 hover:border-stone-800/45 text-gray-700 hover:text-stone-800 rounded-lg transition-all text-sm font-ui font-medium hover:scale-105 active:scale-95"
         >
           <RotateCcw className="w-4 h-4" />
           Reset
@@ -84,7 +84,7 @@ export default function PracticeRound({
             <button
               onClick={prevInstruction}
               disabled={currentInstruction === 0}
-              className="flex items-center gap-2 px-5 py-2.5 bg-gray-100 hover:bg-purple-50 border border-gray-200 text-gray-700 hover:text-purple-600 rounded-xl transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-gray-100 disabled:hover:text-gray-700 font-ui font-medium"
+              className="flex items-center gap-2 px-5 py-2.5 bg-gray-100 hover:bg-stone-800/10 border border-gray-200 text-gray-700 hover:text-stone-800 rounded-xl transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-gray-100 disabled:hover:text-gray-700 font-ui font-medium"
             >
               <ArrowLeft className="w-4 h-4" />
               Previous
@@ -97,7 +97,7 @@ export default function PracticeRound({
                   onClick={() => setCurrentInstruction(index)}
                   className={`h-2 rounded-full transition-all ${
                     index === currentInstruction
-                      ? 'bg-purple-500 w-8'
+                      ? 'bg-stone-900 w-8'
                       : 'bg-gray-300 hover:bg-gray-400 w-2'
                   }`}
                 />
@@ -107,7 +107,7 @@ export default function PracticeRound({
             <button
               onClick={nextInstruction}
               disabled={currentInstruction === instructions.length - 1}
-              className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-400 hover:to-purple-500 text-white rounded-xl transition-all disabled:opacity-40 disabled:cursor-not-allowed font-ui font-semibold shadow-lg shadow-purple-200"
+              className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-stone-800 to-stone-900 hover:from-stone-700 hover:to-stone-800 text-white rounded-xl transition-all disabled:opacity-40 disabled:cursor-not-allowed font-ui font-semibold shadow-lg shadow-stone-800/25"
             >
               Next
               <ArrowRight className="w-4 h-4" />
@@ -128,7 +128,7 @@ export default function PracticeRound({
                     className="px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm text-gray-700 font-ui"
                   >
                     {player.name}
-                    {player.role && <span className="text-purple-600 ml-1">({player.role})</span>}
+                    {player.role && <span className="text-stone-800 ml-1">({player.role})</span>}
                   </div>
                 ))}
               </div>

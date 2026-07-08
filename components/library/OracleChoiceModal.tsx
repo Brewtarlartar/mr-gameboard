@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import { useDialogA11y } from '@/lib/hooks/useDialogA11y';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -109,25 +110,9 @@ export default function OracleChoiceModal({
 
   useEffect(() => setMounted(true), []);
 
-  // Esc to close
-  useEffect(() => {
-    if (!isOpen) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [isOpen, onClose]);
-
-  // Body scroll lock
-  useEffect(() => {
-    if (!isOpen) return;
-    const original = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = original;
-    };
-  }, [isOpen]);
+  // Focus trap + Escape + focus restore + body scroll lock.
+  const panelRef = useRef<HTMLDivElement>(null);
+  useDialogA11y(panelRef, { isOpen, onClose });
 
   // Reset when closed
   useEffect(() => {
@@ -209,11 +194,12 @@ export default function OracleChoiceModal({
         paddingBottom: 'max(calc(env(safe-area-inset-bottom, 0px) + 8px), 16px)',
       }}
       onClick={onClose}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="oracle-title"
     >
       <motion.div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="oracle-title"
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         onClick={(e) => e.stopPropagation()}

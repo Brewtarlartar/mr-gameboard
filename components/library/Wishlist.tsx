@@ -35,7 +35,7 @@ export default function Wishlist() {
   if (wishlist.length === 0) {
     return (
       <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-12 text-center">
-        <Heart className="w-16 h-16 text-purple-400 mx-auto mb-4 opacity-50" />
+        <Heart className="w-16 h-16 text-stone-600 mx-auto mb-4 opacity-50" />
         <h3 className="text-2xl font-bold text-gray-900 mb-2">Your Wishlist is Empty</h3>
         <p className="text-gray-500">
           Start adding games you want to your wishlist from the Discover section!
@@ -50,11 +50,11 @@ export default function Wishlist() {
       <div className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-3xl font-black text-transparent bg-gradient-to-r from-violet-500 to-purple-600 bg-clip-text">Wishlist</h2>
+            <h2 className="text-3xl font-black text-transparent bg-gradient-to-r from-stone-800 to-stone-900 bg-clip-text">Wishlist</h2>
             <p className="text-gray-500 mt-1">
               {wishlist.length} games you want to own
               {searchQuery && searchFilteredWishlist.length !== wishlist.length && (
-                <span className="ml-2 text-purple-600">
+                <span className="ml-2 text-stone-800">
                   • {searchFilteredWishlist.length} matches
                 </span>
               )}
@@ -69,7 +69,7 @@ export default function Wishlist() {
                 onClick={() => setSelectedPriority(priority as any)}
                 className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
                   selectedPriority === priority
-                    ? 'bg-purple-50 text-purple-600 border border-purple-200'
+                    ? 'bg-stone-800/10 text-stone-800 border border-stone-800/30'
                     : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
                 }`}
               >
@@ -87,7 +87,7 @@ export default function Wishlist() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search wishlist by title, category, mechanic, or designer..."
-            className="w-full pl-10 pr-10 py-3 bg-white border border-gray-200 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:border-purple-400 focus:ring-1 focus:ring-purple-400"
+            className="w-full pl-10 pr-10 py-3 bg-white border border-gray-200 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:border-amber-600 focus:ring-1 focus:ring-amber-600"
           />
           {searchQuery && (
             <button
@@ -188,7 +188,7 @@ export default function Wishlist() {
                       addGameFromSeed(item.game);
                       removeFromWishlist(item.id);
                     }}
-                    className="flex-1 px-3 py-2 bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-600 rounded-lg text-xs font-semibold transition-all"
+                    className="flex-1 px-3 py-2 bg-stone-800/10 hover:bg-stone-800/15 border border-stone-800/30 text-stone-800 rounded-lg text-xs font-semibold transition-all"
                   >
                     Add to Library
                   </button>

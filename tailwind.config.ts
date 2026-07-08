@@ -9,28 +9,25 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        background: "var(--background)",
-        foreground: "var(--foreground)",
-        tome: {
-          bg: {
-            primary: '#ffffff',
-            secondary: '#f8f9fa',
-            tertiary: '#f1f3f5',
-          },
-          accent: {
-            purple: '#8b5cf6',
-            'purple-light': '#a78bfa',
-            'purple-dark': '#7c3aed',
-            teal: '#14b8a6',
-            'teal-light': '#2dd4bf',
-          },
-          text: {
-            primary: '#111827',
-            secondary: '#4b5563',
-            muted: '#9ca3af',
-          },
-          border: '#e5e7eb',
+        // Tavern semantic tokens — values live as RGB triples in
+        // app/globals.css :root. rgb(var() / <alpha-value>) keeps Tailwind
+        // opacity modifiers working (bg-surface/80, border-edge/60, ...).
+        surface: {
+          DEFAULT: 'rgb(var(--surface) / <alpha-value>)',
+          raised: 'rgb(var(--surface-raised) / <alpha-value>)',
+          high: 'rgb(var(--surface-high) / <alpha-value>)',
         },
+        ink: {
+          DEFAULT: 'rgb(var(--ink) / <alpha-value>)',
+          muted: 'rgb(var(--ink-muted) / <alpha-value>)',
+        },
+        gold: {
+          DEFAULT: 'rgb(var(--gold) / <alpha-value>)',
+          strong: 'rgb(var(--gold-strong) / <alpha-value>)',
+          deep: 'rgb(var(--gold-deep) / <alpha-value>)',
+        },
+        edge: 'rgb(var(--edge) / <alpha-value>)',
+        danger: 'rgb(var(--danger) / <alpha-value>)',
       },
       animation: {
         'fade-in': 'fadeIn 0.5s ease-in-out',
@@ -58,10 +55,13 @@ const config: Config = {
         },
       },
       boxShadow: {
-        'soft': '0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04)',
-        'card': '0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -2px rgba(0,0,0,0.03)',
-        'elevated': '0 10px 25px -5px rgba(0,0,0,0.08), 0 4px 10px -6px rgba(0,0,0,0.04)',
-        'purple-glow': '0 4px 20px rgba(139, 92, 246, 0.15)',
+        // Elevation scale for the dark theme + the signature gold-glow
+        // (glow values codify the shipped GameCard hover).
+        'tavern-1': '0 1px 2px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.35)',
+        'tavern-2': '0 4px 12px rgba(0,0,0,0.45), 0 12px 32px rgba(0,0,0,0.35)',
+        'tavern-3': '0 12px 32px rgba(0,0,0,0.55), 0 24px 64px rgba(0,0,0,0.45)',
+        'gold-glow': '0 0 18px -4px rgba(251,191,36,0.45)',
+        'gold-glow-strong': '0 0 24px -2px rgba(251,191,36,0.55), 0 0 64px -12px rgba(245,158,11,0.35)',
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],

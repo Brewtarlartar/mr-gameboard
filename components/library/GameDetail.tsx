@@ -28,6 +28,7 @@ import {
 import { createPortal } from 'react-dom';
 import { Game, Player } from '@/types/game';
 import { cn } from '@/lib/utils';
+import { useDialogA11y } from '@/lib/hooks/useDialogA11y';
 import { decodeHtmlEntities } from '@/lib/text/decodeHtml';
 import BggAttribution from '@/components/ui/BggAttribution';
 import { usePlaySessionStore } from '@/lib/store/playSessionStore';
@@ -114,6 +115,7 @@ export default function GameDetail({
   const [mounted, setMounted] = useState(false);
   const [active, setActive] = useState<ActivePanel>(null);
   const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -126,21 +128,15 @@ export default function GameDetail({
     }
   }, [isOpen]);
 
-  useEffect(() => {
-    if (isOpen) {
-      const originalOverflow = document.body.style.overflow;
-      const originalPaddingRight = document.body.style.paddingRight;
-      const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
-
-      document.body.style.overflow = 'hidden';
-      document.body.style.paddingRight = `${scrollbarWidth}px`;
-
-      return () => {
-        document.body.style.overflow = originalOverflow;
-        document.body.style.paddingRight = originalPaddingRight;
-      };
-    }
-  }, [isOpen]);
+  // Focus trap + Escape + focus restore + body scroll lock. Escape closes
+  // an open AI panel first, then the modal itself.
+  useDialogA11y(panelRef, {
+    isOpen,
+    onClose: () => {
+      if (active) closePanel();
+      else onClose();
+    },
+  });
 
   useEffect(() => {
     const currentDescLength = game?.description?.length || 0;
@@ -230,6 +226,10 @@ export default function GameDetail({
             onClick={onClose}
           >
             <motion.div
+              ref={panelRef}
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="game-detail-heading"
               initial={{ y: '100%', opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               exit={{ y: '100%', opacity: 0 }}
@@ -284,7 +284,10 @@ export default function GameDetail({
                 </div>
 
                 <div className="absolute inset-x-0 bottom-0 px-4 pb-3 sm:px-6 sm:pb-4">
-                  <h1 className="text-2xl sm:text-3xl font-serif font-bold text-amber-100 drop-shadow-[0_2px_8px_rgba(0,0,0,0.85)] leading-tight">
+                  <h1
+                    id="game-detail-heading"
+                    className="text-2xl sm:text-3xl font-serif font-bold text-amber-100 drop-shadow-[0_2px_8px_rgba(0,0,0,0.85)] leading-tight"
+                  >
                     {game.name}
                   </h1>
                   {game.yearPublished && (
