@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useDialogA11y } from '@/lib/hooks/useDialogA11y';
 import { motion } from 'framer-motion';
 import {
   X,
@@ -53,19 +54,9 @@ export default function LogSessionModal({
     setMounted(true);
   }, []);
 
-  useEffect(() => {
-    if (!isOpen) return;
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    document.addEventListener('keydown', handleKeyDown);
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [isOpen, onClose]);
+  // Focus trap + Escape + focus restore + body scroll lock.
+  const panelRef = useRef<HTMLDivElement>(null);
+  useDialogA11y(panelRef, { isOpen, onClose });
 
   const handleSubmit = () => {
     if (!selectedGame || players.some((p) => !p.name.trim())) {
@@ -112,11 +103,12 @@ export default function LogSessionModal({
     <div
       className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[100] flex items-start sm:items-center justify-center p-2 sm:p-4 overflow-y-auto"
       onClick={onClose}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="log-session-title"
     >
       <motion.div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="log-session-title"
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         onClick={(e) => e.stopPropagation()}

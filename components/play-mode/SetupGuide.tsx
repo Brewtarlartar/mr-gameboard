@@ -30,7 +30,7 @@ export default function SetupGuide({ steps, onComplete }: SetupGuideProps) {
     <div className="bg-white border border-gray-200 rounded-2xl shadow-sm p-6 space-y-5">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <BookOpen className="w-6 h-6 text-purple-500" />
+          <BookOpen className="w-6 h-6 text-stone-700" />
           <h2 className="text-xl font-bold font-display text-gray-900">Setup Guide</h2>
         </div>
         {allCompleted && (
@@ -51,7 +51,7 @@ export default function SetupGuide({ steps, onComplete }: SetupGuideProps) {
       {steps.length > 0 && (
         <div className="relative h-2 bg-gray-100 rounded-full overflow-hidden">
           <motion.div
-            className="absolute inset-y-0 left-0 bg-gradient-to-r from-violet-500 to-purple-600"
+            className="absolute inset-y-0 left-0 bg-gradient-to-r from-stone-800 to-stone-900"
             initial={{ width: 0 }}
             animate={{ width: `${progress}%` }}
             transition={{ duration: 0.3, ease: "easeOut" }}
@@ -61,7 +61,7 @@ export default function SetupGuide({ steps, onComplete }: SetupGuideProps) {
 
       {steps.length === 0 ? (
         <div className="text-center py-12">
-          <Loader2 className="w-10 h-10 text-purple-500 animate-spin mx-auto mb-3" />
+          <Loader2 className="w-10 h-10 text-stone-700 animate-spin mx-auto mb-3" />
           <p className="text-gray-500 font-ui text-lg">Generating setup guide...</p>
         </div>
       ) : (
@@ -81,7 +81,7 @@ export default function SetupGuide({ steps, onComplete }: SetupGuideProps) {
                   isCompleted
                     ? 'bg-green-50 border-green-300'
                     : isActive
-                    ? 'bg-purple-50 border-purple-500'
+                    ? 'bg-stone-800/10 border-stone-700'
                     : 'bg-gray-50 border-gray-200 hover:border-gray-300'
                 }`}
               >
@@ -94,7 +94,7 @@ export default function SetupGuide({ steps, onComplete }: SetupGuideProps) {
                     className={`mt-0.5 w-7 h-7 rounded-full border-2 flex items-center justify-center transition-all flex-shrink-0 hover:scale-110 active:scale-95 ${
                       isCompleted
                         ? 'bg-green-500 border-green-500 shadow-lg shadow-green-200'
-                        : 'border-gray-300 hover:border-purple-400'
+                        : 'border-gray-300 hover:border-stone-600'
                     }`}
                   >
                     {isCompleted && <Check className="w-4 h-4 text-white" />}

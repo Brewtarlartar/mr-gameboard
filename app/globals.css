@@ -7,37 +7,31 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ==========================================================================
+   Tavern tokens — the ONE source of truth for the dark theme.
+   Space-separated RGB triples so Tailwind opacity modifiers work
+   (e.g. bg-surface/80, border-edge/60) — mapped in tailwind.config.ts.
+   Canonical usage: surfaces = stone gradient (surface → surface-raised),
+   borders = edge/60 (edge-strong for emphasis), text = ink / ink-muted/70,
+   accents = gold family. Radius scale: controls lg–xl, cards xl, modals 2xl,
+   pills full. Elevation: shadow-tavern-1/2/3 + shadow-gold-glow for hover.
+   ========================================================================== */
 :root {
-  --bg-primary: #fbf5ea;
-  --bg-secondary: #f5ead3;
-  --bg-tertiary: #ecdcbd;
+  --surface: 12 10 9;          /* deepest base (stone-950) */
+  --surface-raised: 28 25 23;  /* raised panels (stone-900) */
+  --surface-high: 41 37 36;    /* hover / top layer (stone-800) */
 
-  --accent-purple: #b8860b;
-  --accent-purple-light: #d4a017;
-  --accent-purple-dark: #8b6508;
+  --ink: 254 243 199;          /* primary text on dark (amber-100) */
+  --ink-muted: 253 230 138;    /* secondary text, use with /70 (amber-200) */
 
-  --accent-amber: #c17817;
-  --accent-amber-light: #e09b2e;
-  --accent-amber-dark: #8b5510;
-  --accent-crimson: #8b2e2e;
-  --accent-teal: #14b8a6;
-  --accent-teal-light: #2dd4bf;
+  --gold: 245 158 11;          /* signature accent (amber-500) */
+  --gold-strong: 251 191 36;   /* bright/hover accent (amber-400) */
+  --gold-deep: 180 83 9;       /* pressed states, strong borders (amber-700) */
 
-  --text-primary: #1f1410;
-  --text-secondary: #4a342a;
-  --text-muted: #8a6d5e;
+  --edge: 120 53 15;           /* borders — canonical: border-edge/60 (amber-900) */
+  --danger: 220 38 38;         /* destructive (red-600) */
 
-  --border: #d4c4a8;
-  --border-light: #e8dcc4;
-
-  --background: #fbf5ea;
-  --foreground: #1f1410;
-
-  --tavern-overlay: rgba(28, 16, 10, 0.55);
-
-  --font-display: 'Cinzel', 'EB Garamond', Georgia, serif;
   --font-body: 'Inter', system-ui, sans-serif;
-  --font-ui: 'Inter', system-ui, sans-serif;
 }
 
 html {
@@ -45,7 +39,7 @@ html {
 }
 
 body {
-  color: var(--text-primary);
+  color: rgb(var(--ink));
   background: transparent;
   font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
@@ -302,98 +296,10 @@ body::after {
   border-color: rgba(232, 220, 196, 0.6) !important;
 }
 
-/* ==========================================================================
-   Tavern theme: remap Tailwind's purple / violet / fuchsia scale to warm
-   charcoal tones so every lingering "purple" accent across components picks
-   up a textured black/gray look without editing each file.
-   ========================================================================== */
-
-/* -- Text colors -- */
-.text-purple-300, .text-violet-300, .text-fuchsia-300 { color: #6a5d50 !important; }
-.text-purple-400, .text-violet-400, .text-fuchsia-400 { color: #524638 !important; }
-.text-purple-500, .text-violet-500, .text-fuchsia-500 { color: #3d342a !important; }
-.text-purple-600, .text-violet-600, .text-fuchsia-600 { color: #2f2820 !important; }
-.text-purple-700, .text-violet-700, .text-fuchsia-700 { color: #231d16 !important; }
-.text-purple-800, .text-violet-800, .text-fuchsia-800 { color: #1a1610 !important; }
-.text-purple-900, .text-violet-900, .text-fuchsia-900 { color: #12100c !important; }
-
-/* -- Tint backgrounds (badges, hover states) -- */
-.bg-purple-50, .bg-violet-50, .bg-fuchsia-50 { background-color: rgba(42, 36, 30, 0.07) !important; }
-.bg-purple-100, .bg-violet-100, .bg-fuchsia-100 { background-color: rgba(42, 36, 30, 0.12) !important; }
-.bg-purple-200, .bg-violet-200, .bg-fuchsia-200 { background-color: rgba(42, 36, 30, 0.2) !important; }
-.bg-purple-300, .bg-violet-300, .bg-fuchsia-300 { background-color: rgba(42, 36, 30, 0.35) !important; }
-
-/* -- Solid backgrounds (buttons, filled pills) get a subtle texture gradient
-      so flat "black" feels like aged leather / iron rather than plastic -- */
-.bg-purple-400, .bg-violet-400, .bg-fuchsia-400 {
-  background-color: #3d342a !important;
-  background-image: linear-gradient(135deg, #4a3f34 0%, #2f2820 100%) !important;
-}
-.bg-purple-500, .bg-violet-500, .bg-fuchsia-500 {
-  background-color: #2a241e !important;
-  background-image: linear-gradient(135deg, #3a322a 0%, #1f1a14 100%) !important;
-}
-.bg-purple-600, .bg-violet-600, .bg-fuchsia-600 {
-  background-color: #1f1a14 !important;
-  background-image: linear-gradient(135deg, #2f2820 0%, #14110c 100%) !important;
-}
-.bg-purple-700, .bg-violet-700, .bg-fuchsia-700 {
-  background-color: #15110c !important;
-  background-image: linear-gradient(135deg, #231d16 0%, #0d0a07 100%) !important;
-}
-
-/* -- Borders -- */
-.border-purple-100, .border-violet-100 { border-color: rgba(42, 36, 30, 0.18) !important; }
-.border-purple-200, .border-violet-200 { border-color: rgba(42, 36, 30, 0.3) !important; }
-.border-purple-300, .border-violet-300 { border-color: rgba(42, 36, 30, 0.45) !important; }
-.border-purple-400, .border-violet-400 { border-color: #52463a !important; }
-.border-purple-500, .border-violet-500 { border-color: #3d342a !important; }
-
-/* -- Gradient stops (from-violet-500 to-purple-600 etc. used in buttons,
-      headings, modal accents) -- */
-.from-purple-400, .from-violet-400 { --tw-gradient-from: #3d342a var(--tw-gradient-from-position) !important; --tw-gradient-to: rgb(61 52 42 / 0) var(--tw-gradient-to-position) !important; --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important; }
-.from-purple-500, .from-violet-500 { --tw-gradient-from: #2a241e var(--tw-gradient-from-position) !important; --tw-gradient-to: rgb(42 36 30 / 0) var(--tw-gradient-to-position) !important; --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important; }
-.from-purple-600, .from-violet-600 { --tw-gradient-from: #1f1a14 var(--tw-gradient-from-position) !important; --tw-gradient-to: rgb(31 26 20 / 0) var(--tw-gradient-to-position) !important; --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important; }
-.from-purple-50, .from-violet-50 { --tw-gradient-from: rgba(42, 36, 30, 0.06) var(--tw-gradient-from-position) !important; --tw-gradient-to: rgb(42 36 30 / 0) var(--tw-gradient-to-position) !important; --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to) !important; }
-
-.via-purple-500, .via-violet-500 { --tw-gradient-to: rgb(42 36 30 / 0) var(--tw-gradient-to-position) !important; --tw-gradient-stops: var(--tw-gradient-from), #2a241e var(--tw-gradient-via-position), var(--tw-gradient-to) !important; }
-.via-purple-600, .via-violet-600 { --tw-gradient-to: rgb(31 26 20 / 0) var(--tw-gradient-to-position) !important; --tw-gradient-stops: var(--tw-gradient-from), #1f1a14 var(--tw-gradient-via-position), var(--tw-gradient-to) !important; }
-
-.to-purple-400, .to-violet-400 { --tw-gradient-to: #3d342a var(--tw-gradient-to-position) !important; }
-.to-purple-500, .to-violet-500 { --tw-gradient-to: #2a241e var(--tw-gradient-to-position) !important; }
-.to-purple-600, .to-violet-600 { --tw-gradient-to: #1f1a14 var(--tw-gradient-to-position) !important; }
-.to-purple-700, .to-violet-700 { --tw-gradient-to: #15110c var(--tw-gradient-to-position) !important; }
-.to-purple-50, .to-violet-50 { --tw-gradient-to: rgba(42, 36, 30, 0.06) var(--tw-gradient-to-position) !important; }
-
-/* -- Rings & focus states -- */
-.ring-purple-300, .ring-violet-300 { --tw-ring-color: rgba(82, 70, 58, 0.5) !important; }
-.ring-purple-400, .ring-violet-400 { --tw-ring-color: rgba(61, 52, 42, 0.5) !important; }
-.ring-purple-500, .ring-violet-500 { --tw-ring-color: rgba(42, 36, 30, 0.55) !important; }
-
-/* -- Shadows tinted purple -- */
-.shadow-purple-100, .shadow-violet-100 { --tw-shadow-color: rgba(42, 36, 30, 0.15) !important; --tw-shadow: var(--tw-shadow-colored) !important; }
-.shadow-purple-200, .shadow-violet-200 { --tw-shadow-color: rgba(42, 36, 30, 0.25) !important; --tw-shadow: var(--tw-shadow-colored) !important; }
-.shadow-purple-300, .shadow-violet-300 { --tw-shadow-color: rgba(42, 36, 30, 0.35) !important; --tw-shadow: var(--tw-shadow-colored) !important; }
-
-/* -- Hover variants (Tailwind compiles hover:bg-purple-100 to .hover\:bg-purple-100:hover) -- */
-.hover\:bg-purple-50:hover, .hover\:bg-violet-50:hover { background-color: rgba(42, 36, 30, 0.07) !important; }
-.hover\:bg-purple-100:hover, .hover\:bg-violet-100:hover { background-color: rgba(42, 36, 30, 0.12) !important; }
-.hover\:bg-purple-200:hover, .hover\:bg-violet-200:hover { background-color: rgba(42, 36, 30, 0.2) !important; }
-.hover\:bg-purple-600:hover, .hover\:bg-violet-600:hover {
-  background-color: #1f1a14 !important;
-  background-image: linear-gradient(135deg, #2f2820 0%, #14110c 100%) !important;
-}
-.hover\:bg-purple-700:hover, .hover\:bg-violet-700:hover {
-  background-color: #15110c !important;
-  background-image: linear-gradient(135deg, #231d16 0%, #0d0a07 100%) !important;
-}
-.hover\:text-purple-600:hover, .hover\:text-violet-600:hover { color: #2f2820 !important; }
-.hover\:text-purple-700:hover, .hover\:text-violet-700:hover { color: #231d16 !important; }
-
 @layer base {
   h1, h2, h3, h4, h5, h6 {
     @apply font-display tracking-tight;
-    color: var(--text-primary);
+    color: rgb(var(--ink));
   }
 
   h1 { @apply text-5xl font-extrabold leading-tight; }
@@ -403,94 +309,21 @@ body::after {
 
   a {
     @apply transition-colors duration-200;
-    color: var(--accent-purple);
+    color: rgb(var(--gold-strong));
   }
-  a:hover { color: var(--accent-purple-dark); }
+  a:hover { color: rgb(var(--gold)); }
 
   button { @apply transition-all duration-200 ease-out; }
 }
 
 @layer components {
-  .glass-card {
-    @apply backdrop-blur-md rounded-2xl shadow-lg;
-    background: rgba(251, 245, 234, 0.92);
-    border: 1px solid rgba(193, 120, 23, 0.25);
-  }
-
-  .glass-card-dark {
-    @apply backdrop-blur-md rounded-2xl shadow-xl;
-    background: rgba(245, 234, 211, 0.95);
-    border: 1px solid rgba(193, 120, 23, 0.3);
-  }
-
-  .btn-primary {
-    @apply relative px-6 py-3 rounded-xl font-semibold overflow-hidden text-white;
-    @apply transition-all duration-300 ease-out;
-    @apply shadow-md hover:shadow-lg;
-    @apply transform hover:scale-[1.02] active:scale-95;
-    background: linear-gradient(to right, #c17817, #8b5510);
-  }
-  .btn-primary:hover {
-    box-shadow: 0 10px 20px rgba(193, 120, 23, 0.35);
-  }
-
-  .btn-secondary {
-    @apply px-6 py-3 rounded-xl font-semibold;
-    @apply transition-all duration-200;
-    @apply transform active:scale-95;
-    background: rgba(245, 234, 211, 0.9);
-    color: var(--text-primary);
-    border: 1px solid var(--border);
-  }
-  .btn-secondary:hover {
-    background: rgba(236, 220, 189, 0.95);
-  }
-
-  .card {
-    @apply rounded-2xl shadow-md;
-    background: rgba(251, 245, 234, 0.95);
-    border: 1px solid var(--border);
-  }
-
-  .card-hover {
-    @apply transform transition-all duration-300 ease-out;
-    @apply hover:scale-[1.02] hover:-translate-y-1;
-    @apply hover:shadow-xl;
-  }
-
+  /* The old btn-primary / card / glass-card / badge / input-field starter
+     kit was styled for the retired parchment light theme and had zero
+     usages — it was deleted with that theme. Shared UI now lives in
+     components/ui (Button, Card, Chip, StatCard, Input, Dialog, Pressable). */
   .gradient-text {
     @apply bg-clip-text text-transparent;
     background-image: linear-gradient(to right, #c17817, #e09b2e, #c17817);
-  }
-
-  .input-field {
-    @apply rounded-xl px-4 py-3;
-    background: rgba(251, 245, 234, 0.95);
-    border: 1px solid var(--border);
-    color: var(--text-primary);
-    transition: all 0.2s;
-  }
-  .input-field::placeholder {
-    color: var(--text-muted);
-  }
-  .input-field:focus {
-    outline: none;
-    border-color: var(--accent-amber);
-    box-shadow: 0 0 0 3px rgba(193, 120, 23, 0.2);
-  }
-
-  .badge {
-    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold;
-    background: rgba(224, 155, 46, 0.15);
-    border: 1px solid rgba(193, 120, 23, 0.3);
-    color: var(--accent-amber-dark);
-  }
-
-  .badge-accent {
-    @apply inline-flex items-center px-3 py-1 rounded-full text-xs font-bold;
-    background: linear-gradient(to right, rgba(224, 155, 46, 0.15), rgba(193, 120, 23, 0.2));
-    border: 1px solid rgba(193, 120, 23, 0.4);
-    color: var(--accent-amber-dark);
   }
 }
 
@@ -532,27 +365,27 @@ body::after {
   height: 8px;
 }
 ::-webkit-scrollbar-track {
-  background: var(--bg-secondary);
+  background: rgb(var(--surface-raised));
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--text-muted);
+  background: rgb(var(--gold-deep) / 0.55);
   border-radius: 4px;
-  border: 2px solid var(--bg-secondary);
+  border: 2px solid rgb(var(--surface-raised));
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--text-secondary);
+  background: rgb(var(--gold-deep));
 }
 
 ::selection {
-  background: rgba(193, 120, 23, 0.25);
-  color: var(--text-primary);
+  background: rgb(var(--gold) / 0.3);
+  color: rgb(var(--ink));
 }
 
 html { scroll-behavior: smooth; }
 
 :focus-visible {
-  outline: 2px solid rgba(193, 120, 23, 0.6);
+  outline: 2px solid rgb(var(--gold) / 0.7);
   outline-offset: 2px;
   border-radius: 4px;
 }

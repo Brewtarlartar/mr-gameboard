@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Heart, Users, Clock, Star, Trash2, TrendingUp, Sparkles, Scale } from 'lucide-react';
 import { Game } from '@/types/game';
+import Pressable from '@/components/ui/Pressable';
 
 const FALLBACK_IMAGES: Record<number, string> = {
   13: 'https://cf.geekdo-images.com/W3Bsga_uLP9kO91gZ7H8yw__original/img/xV7oisd3RQ8R-k18cdWAYthHXsA=/0x0/filters:format(jpeg)/pic2419375.jpg',
@@ -53,9 +54,16 @@ export default function GameCard({
       animate={{ opacity: isRemoving ? 0 : 1, y: 0, scale: isRemoving ? 0.9 : 1 }}
       whileHover={{ scale: 1.02, y: -2 }}
       transition={{ duration: 0.2 }}
-      className="relative h-full flex flex-col bg-gradient-to-b from-stone-950/90 via-stone-900/80 to-stone-950/95 border border-amber-900/50 hover:border-amber-500/60 rounded-xl overflow-hidden cursor-pointer group hover:shadow-[0_0_18px_-4px_rgba(251,191,36,0.45)] transition-all"
-      onClick={() => onSelect(game)}
+      className="relative h-full flex flex-col bg-gradient-to-b from-stone-950/90 via-stone-900/80 to-stone-950/95 border border-amber-900/50 hover:border-amber-500/60 rounded-xl overflow-hidden group hover:shadow-gold-glow transition-all"
     >
+      {/* Keyboard-accessible tap surface for the whole card; the action
+          buttons sit above it (z-10) as siblings, never nested inside. */}
+      <Pressable
+        className="absolute inset-0 z-[5] rounded-xl"
+        aria-label={`Open ${game.name}`}
+        onClick={() => onSelect(game)}
+      />
+
       <div className="relative w-full aspect-[3/4] flex items-center justify-center bg-gradient-to-br from-stone-900 to-stone-950">
         {hasValidImage ? (
           <img
@@ -79,14 +87,14 @@ export default function GameCard({
         )}
 
         {game.rank && (
-          <div className="absolute top-2 left-2 flex items-center gap-1 px-2 py-1 bg-amber-600/90 border border-amber-400/40 rounded-md text-xs font-bold text-stone-950 z-10 shadow-md">
+          <div className="pointer-events-none absolute top-2 left-2 flex items-center gap-1 px-2 py-1 bg-amber-600/90 border border-amber-400/40 rounded-md text-xs font-bold text-stone-950 z-10 shadow-md">
             <span>#{game.rank}</span>
           </div>
         )}
 
         {game.isTrending && (
           <div
-            className="absolute left-2 flex items-center gap-1 px-2 py-1 bg-gradient-to-r from-amber-500 to-orange-500 rounded-md text-xs font-bold text-stone-950 z-10 shadow-lg"
+            className="pointer-events-none absolute left-2 flex items-center gap-1 px-2 py-1 bg-gradient-to-r from-amber-500 to-orange-500 rounded-md text-xs font-bold text-stone-950 z-10 shadow-lg"
             style={{ top: game.rank ? '50px' : '8px' }}
           >
             <TrendingUp className="w-3 h-3" />
@@ -96,7 +104,7 @@ export default function GameCard({
 
         {game.isNew && !game.isTrending && (
           <div
-            className="absolute left-2 flex items-center gap-1 px-2 py-1 bg-gradient-to-r from-amber-300 to-amber-500 rounded-md text-xs font-bold text-stone-950 z-10 shadow-lg"
+            className="pointer-events-none absolute left-2 flex items-center gap-1 px-2 py-1 bg-gradient-to-r from-amber-300 to-amber-500 rounded-md text-xs font-bold text-stone-950 z-10 shadow-lg"
             style={{ top: game.rank ? '50px' : '8px' }}
           >
             <Sparkles className="w-3 h-3" />

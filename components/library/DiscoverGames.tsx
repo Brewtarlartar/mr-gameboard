@@ -19,6 +19,7 @@ import { useGameStore } from '@/lib/store/gameStore';
 import { useWishlistStore } from '@/lib/store/wishlistStore';
 import { SeedGame } from '@/types/seedGame';
 import GameDetailModal from './GameDetailModal';
+import Pressable from '@/components/ui/Pressable';
 
 const FALLBACK_IMAGES: Record<string, string> = {
   '13': 'https://cf.geekdo-images.com/W3Bsga_uLP9kO91gZ7H8yw__original/img/xV7oisd3RQ8R-k18cdWAYthHXsA=/0x0/filters:format(jpeg)/pic2419375.jpg',
@@ -509,10 +510,15 @@ function CatalogCard({
     imageUrl && imageUrl.trim() !== '' && !(imageError && !fallbackImage);
 
   return (
-    <div
-      onClick={onClick}
-      className="group relative h-full flex flex-col bg-gradient-to-b from-stone-950/90 via-stone-900/80 to-stone-950/95 border border-amber-900/50 hover:border-amber-500/60 rounded-xl overflow-hidden cursor-pointer hover:shadow-[0_0_18px_-4px_rgba(251,191,36,0.45)] transition-all"
-    >
+    <div className="group relative h-full flex flex-col bg-gradient-to-b from-stone-950/90 via-stone-900/80 to-stone-950/95 border border-amber-900/50 hover:border-amber-500/60 rounded-xl overflow-hidden hover:shadow-gold-glow transition-all">
+      {/* Keyboard-accessible tap surface for the whole card; the add/wishlist
+          buttons sit above it (z-[3]) as siblings, never nested inside. */}
+      <Pressable
+        className="absolute inset-0 z-[2] rounded-xl"
+        aria-label={`Open ${game.title}`}
+        onClick={onClick}
+      />
+
       <div className="relative w-full aspect-[3/4] flex items-center justify-center bg-gradient-to-br from-stone-900 to-stone-950">
         {hasValidImage ? (
           <>
@@ -550,7 +556,7 @@ function CatalogCard({
         )}
 
         {game.rank && (
-          <div className="absolute top-2 left-2 z-[3] flex items-center gap-1 px-2 py-1 bg-amber-600/90 border border-amber-400/40 rounded-md text-xs font-bold text-stone-950 shadow-md">
+          <div className="pointer-events-none absolute top-2 left-2 z-[3] flex items-center gap-1 px-2 py-1 bg-amber-600/90 border border-amber-400/40 rounded-md text-xs font-bold text-stone-950 shadow-md">
             #{game.rank}
           </div>
         )}
