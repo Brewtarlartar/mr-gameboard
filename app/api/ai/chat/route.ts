@@ -100,7 +100,8 @@ export async function POST(req: NextRequest) {
       messages: betaMessages,
       betas: [FILES_BETA],
     });
-    return textStreamToResponse(stream);
+    // The client renders a provenance badge from this header.
+    return textStreamToResponse(stream, { 'X-Tome-Grounded': '1' });
   }
 
   const stream = client.messages.stream({
@@ -113,5 +114,5 @@ export async function POST(req: NextRequest) {
     ],
   });
 
-  return textStreamToResponse(stream);
+  return textStreamToResponse(stream, { 'X-Tome-Grounded': '0' });
 }

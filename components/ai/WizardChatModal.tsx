@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Send, Trash2, Loader2, RotateCcw, History } from 'lucide-react';
+import { X, Send, Trash2, Loader2, RotateCcw, History, BookOpen, BookOpenCheck, Flag } from 'lucide-react';
 import { useAIStore, type WizardMessage } from '@/lib/store/aiStore';
 import { readApiError } from '@/lib/ai/readApiError';
 import { getPreferences } from '@/lib/storage';
@@ -34,9 +34,17 @@ export default function WizardChatModal({
   gameName,
   inline = false,
 }: Props) {
-  const { wizardMessages, appendWizardMessage, updateLastAssistantMessage, clearWizard } = useAIStore();
+  const {
+    wizardMessages,
+    appendWizardMessage,
+    updateLastAssistantMessage,
+    markLastAssistantGrounded,
+    markMessageReported,
+    clearWizard,
+  } = useAIStore();
   const [input, setInput] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
+  const [reportingId, setReportingId] = useState<string | null>(null);
   const [lastError, setLastError] = useState<string | null>(null);
   const [conversationId, setConversationId] = useState<string | undefined>();
   const [titleHint, setTitleHint] = useState<string | undefined>();
@@ -137,6 +145,8 @@ export default function WizardChatModal({
       if (!response.ok || !response.body) {
         throw new Error(await readApiError(response));
       }
+
+      markLastAssistantGrounded(response.headers.get('X-Tome-Grounded') === '1');
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
@@ -240,6 +250,62 @@ export default function WizardChatModal({
     await deleteWizardConversation(id);
   };
 
+  const handleReport = async (msg: WizardMessage) => {
+    if (reportingId) return;
+    const idx = wizardMessages.findIndex((m) => m.id === msg.id);
+    let question = '';
+    for (let i = idx - 1; i >= 0; i--) {
+      if (wizardMessages[i].role === 'user') {
+        question = wizardMessages[i].content;
+        break;
+      }
+    }
+    setReportingId(msg.id);
+    try {
+      const res = await fetch('/api/ai/report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...(bggId ? { bggId } : {}),
+          ...(gameName ? { gameName } : {}),
+          question,
+          answer: msg.content,
+          grounded: msg.grounded === true,
+        }),
+      });
+      if (res.ok) markMessageReported(msg.id);
+    } catch {
+      // Best-effort intake — the button stays available to try again.
+    } finally {
+      setReportingId(null);
+    }
+  };
+
+  const lastAssistantId = [...wizardMessages].reverse().find((m) => m.role === 'assistant')?.id;
+
+  // Provenance of the current conversation: taken from the newest assistant
+  // message that carries a grounded flag (stable per game + auth state).
+  const latestProvenance = (() => {
+    for (let i = wizardMessages.length - 1; i >= 0; i--) {
+      const m = wizardMessages[i];
+      if (m.role === 'assistant' && m.grounded !== undefined) return m.grounded;
+    }
+    return null;
+  })();
+
+  const provenanceStrip =
+    latestProvenance === null ? null : latestProvenance ? (
+      <div className="flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-[11px] bg-amber-500/10 border-b border-amber-500/20 text-amber-300">
+        <BookOpenCheck className="w-3.5 h-3.5 shrink-0" />
+        <span>The Wizard has studied this tome — answers cite the official rulebook</span>
+      </div>
+    ) : (
+      <div className="flex items-center gap-1.5 px-3 sm:px-4 py-1.5 text-[11px] bg-stone-900 border-b border-stone-800 text-stone-500">
+        <BookOpen className="w-3.5 h-3.5 shrink-0" />
+        <span>From the Oracle&apos;s memory — verify big rulings against the rulebook</span>
+      </div>
+    );
+
   const popupOpen =
     isOpen && !inline
       ? false
@@ -319,6 +385,29 @@ export default function WizardChatModal({
             ) : (
               <MarkdownMessage>{m.content}</MarkdownMessage>
             )}
+            {m.role === 'assistant' &&
+              m.content.length > 0 &&
+              !(isStreaming && m.id === lastAssistantId) && (
+                <div className="mt-1.5 flex justify-end">
+                  {m.reported ? (
+                    <span className="inline-flex items-center gap-1 text-[10px] text-stone-500">
+                      <Flag className="w-3 h-3" />
+                      Reported — thank thee
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => handleReport(m)}
+                      disabled={reportingId === m.id}
+                      className="inline-flex items-center gap-1 text-[10px] text-stone-600 hover:text-red-300 transition-colors disabled:opacity-50"
+                      aria-label="Report this answer as wrong or offensive"
+                    >
+                      <Flag className="w-3 h-3" />
+                      Report this answer
+                    </button>
+                  )}
+                </div>
+              )}
           </div>
         </div>
       ))}
@@ -377,6 +466,7 @@ export default function WizardChatModal({
   const fullChatBody = (
     <>
       {headerNode(closePopupAndReset)}
+      {provenanceStrip}
       {chatScroll}
       {composer('Ask a follow-up…')}
     </>
@@ -571,6 +661,7 @@ export default function WizardChatModal({
             onClick={(e) => e.stopPropagation()}
           >
             {headerNode(onClose)}
+            {provenanceStrip}
             {chatScroll}
             {composer('Ask about a rule, a ruling, or a quick strategy call…')}
           </motion.div>

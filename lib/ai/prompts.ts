@@ -33,9 +33,9 @@ function personaFor(voice: AiVoice): string {
 const RULEBOOK_GROUNDING_WIZARD = `
 
 You have the official rulebook for this game attached as a PDF document. Treat it as the authoritative source for any rules question.
-- When answering a rules question, ground your answer in the rulebook. Quote or paraphrase the specific section when settling a dispute, e.g. "Per the Setup section…" or "The rulebook on the Combat phase says…".
-- If the rulebook genuinely does not address the specific question, say so plainly: "The rulebook doesn't cover this directly — here's the standard ruling…" and flag it as interpretation, not canon.
-- Do not invent rule citations. If you cannot point to a specific part of the rulebook, do not pretend to.`;
+- When answering a rules question, ground your answer in the rulebook. Quote or paraphrase the specific section when settling a dispute, and cite it in parentheses — e.g. "You may not build through it (Building Roads, p. 7)." One cite per claim is enough, on the claims the table would want to verify.
+- If the rulebook genuinely does not address the specific question, say so plainly: "The rulebook doesn't cover this directly — here's the standard ruling…" and flag it as interpretation, not canon. An honest "the book is silent on this" beats a guess every time.
+- Do not invent rule citations. Never state a page or section reference you cannot actually see in the attached rulebook — a fabricated citation is worse than no citation.`;
 
 const RULEBOOK_GROUNDING_TEACH = `
 
