@@ -394,3 +394,77 @@ export async function fetchBggSearch(
     return null;
   }
 }
+
+// --- Collection import ---
+
+export interface BggCollectionItem {
+  bggId: number;
+  name: string;
+  yearPublished: number | null;
+  image: string | null;
+  thumbnail: string | null;
+  minPlayers: number | null;
+  maxPlayers: number | null;
+  playingTime: number | null;
+  rating: number | null;
+  rank: number | null;
+}
+
+export type BggCollectionResult =
+  | { status: 'ok'; items: BggCollectionItem[] }
+  | { status: 'queued' }
+  | { status: 'not_found' }
+  | { status: 'error' };
+
+/**
+ * Fetch a user's owned collection (base games only). BGG answers 202 while it
+ * builds the export — callers should retry after a short delay on 'queued'.
+ * Honors `BGG_API_TOKEN`.
+ */
+export async function fetchBggCollection(username: string): Promise<BggCollectionResult> {
+  const url =
+    `https://boardgamegeek.com/xmlapi2/collection?username=${encodeURIComponent(username)}` +
+    `&own=1&stats=1&excludesubtype=boardgameexpansion`;
+  try {
+    const res = await fetchWithTimeout(url, 15000);
+    if (res.status === 202) return { status: 'queued' };
+    if (!res.ok) return res.status === 404 ? { status: 'not_found' } : { status: 'error' };
+    const xml = await res.text();
+    if (/<errors>/i.test(xml)) return { status: 'not_found' };
+
+    const items: BggCollectionItem[] = [];
+    const itemBlocks = xml.match(/<item [\s\S]*?<\/item>/gi) ?? [];
+    for (const block of itemBlocks) {
+      const idMatch = block.match(/objectid="(\d+)"/i);
+      const nameMatch = block.match(/<name[^>]*>([\s\S]*?)<\/name>/i);
+      if (!idMatch || !nameMatch) continue;
+      const statsMatch = block.match(/<stats([^>]*)>/i);
+      const statAttr = (attr: string): number | null => {
+        const m = statsMatch?.[1]?.match(new RegExp(`${attr}="(\\d+)"`, 'i'));
+        return m ? parseInt(m[1], 10) : null;
+      };
+      const yearMatch = block.match(/<yearpublished>(\d+)<\/yearpublished>/i);
+      const imageMatch = block.match(/<image>([\s\S]*?)<\/image>/i);
+      const thumbMatch = block.match(/<thumbnail>([\s\S]*?)<\/thumbnail>/i);
+      const avgMatch = block.match(/<average value="([\d.]+)"/i);
+      const rankMatch = block.match(/<rank[^>]*name="boardgame"[^>]*value="(\d+)"/i);
+
+      items.push({
+        bggId: parseInt(idMatch[1], 10),
+        name: nameMatch[1].trim(),
+        yearPublished: yearMatch ? parseInt(yearMatch[1], 10) : null,
+        image: imageMatch ? imageMatch[1].trim() : null,
+        thumbnail: thumbMatch ? thumbMatch[1].trim() : null,
+        minPlayers: statAttr('minplayers'),
+        maxPlayers: statAttr('maxplayers'),
+        playingTime: statAttr('playingtime'),
+        rating: avgMatch ? parseFloat(avgMatch[1]) : null,
+        rank: rankMatch ? parseInt(rankMatch[1], 10) : null,
+      });
+    }
+    return { status: 'ok', items };
+  } catch (err) {
+    console.warn('[BGG] collection fetch failed:', err);
+    return { status: 'error' };
+  }
+}
