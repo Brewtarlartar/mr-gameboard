@@ -39,6 +39,8 @@ export async function POST() {
     admin.from('custom_games').delete().eq('user_id', user.id),
     admin.from('user_preferences').delete().eq('user_id', user.id),
     admin.from('wizard_conversations').delete().eq('user_id', user.id),
+    admin.from('play_sessions').delete().eq('user_id', user.id),
+    admin.from('wishlist_items').delete().eq('user_id', user.id),
     admin.from('users').delete().eq('id', user.id),
   ]);
 

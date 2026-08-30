@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { SeedGame } from '@/types/seedGame';
+import { pushWishlistItem, removeWishlistItem } from '@/lib/sync/chronicleSync';
 
 export interface WishlistItem {
   id: string;
@@ -41,12 +42,14 @@ export const useWishlistStore = create<WishlistStore>()(
         set(state => ({
           wishlist: [...state.wishlist, newItem],
         }));
+        void pushWishlistItem(newItem);
       },
 
       removeFromWishlist: (id) => {
         set(state => ({
           wishlist: state.wishlist.filter(item => item.id !== id),
         }));
+        void removeWishlistItem(id);
       },
 
       updateWishlistItem: (id, updates) => {
@@ -55,6 +58,8 @@ export const useWishlistStore = create<WishlistStore>()(
             item.id === id ? { ...item, ...updates } : item
           ),
         }));
+        const updated = get().wishlist.find(item => item.id === id);
+        if (updated) void pushWishlistItem(updated);
       },
 
       isInWishlist: (bggId) => {

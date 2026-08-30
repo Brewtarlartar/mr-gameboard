@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Game } from '@/types/game';
+import { pushPlaySession, removePlaySession } from '@/lib/sync/chronicleSync';
 
 export type SessionMode = 'competitive' | 'coop' | 'team';
 
@@ -55,6 +56,7 @@ export const usePlayHistoryStore = create<PlayHistoryStore>()(
         set((state) => ({
           sessions: [...state.sessions, newSession],
         }));
+        void pushPlaySession(newSession);
       },
 
       updateSession: (id, updates) => {
@@ -63,12 +65,15 @@ export const usePlayHistoryStore = create<PlayHistoryStore>()(
             s.id === id ? { ...s, ...updates } : s
           ),
         }));
+        const updated = get().sessions.find((s) => s.id === id);
+        if (updated) void pushPlaySession(updated);
       },
 
       deleteSession: (id) => {
         set((state) => ({
           sessions: state.sessions.filter((s) => s.id !== id),
         }));
+        void removePlaySession(id);
       },
 
       clearHistory: () => {
