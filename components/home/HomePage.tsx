@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 
 import AICompanionSection from '@/components/ai/AICompanionSection';
+import HomeDashboard from '@/components/home/HomeDashboard';
 import { useGameStore } from '@/lib/store/gameStore';
 
 export default function HomePage() {
@@ -15,6 +16,7 @@ export default function HomePage() {
   return (
     <div className="flex flex-col pt-[14vh] pb-6">
       <AICompanionSection />
+      <HomeDashboard />
     </div>
   );
 }

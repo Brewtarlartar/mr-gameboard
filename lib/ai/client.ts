@@ -15,6 +15,5 @@ export function getAnthropic(): Anthropic {
 export const MODELS = {
   wizard: 'claude-haiku-4-5',
   overview: 'claude-sonnet-4-6',
-  deep: 'claude-opus-4-7',
   teach: 'claude-sonnet-4-6',
 } as const;

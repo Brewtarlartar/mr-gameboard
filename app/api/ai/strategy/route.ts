@@ -32,12 +32,15 @@ export async function POST(req: NextRequest) {
     return new Response('Invalid JSON', { status: 400 });
   }
 
-  const { gameName, faction, depth, voice, bggId } = body;
+  const { gameName, faction, voice, bggId } = body;
   const gName = clampString(gameName, AI_LIMITS.strategy.maxGameNameChars).trim();
   const factionTrimmed = clampString(faction, AI_LIMITS.strategy.maxFactionChars).trim();
-  if (!gName || (depth !== 'overview' && depth !== 'deep')) {
+  if (!gName || (body.depth !== 'overview' && body.depth !== 'deep')) {
     return new Response('gameName and depth are required', { status: 400 });
   }
+  // Deep strategy runs Opus (the most expensive call in the app) — signed-in
+  // only. Anonymous requests degrade gracefully to the Sonnet overview tier.
+  const depth = body.depth === 'deep' && userData.user ? 'deep' : 'overview';
   const resolvedVoice: AiVoice = voice === 'plain' ? 'plain' : 'wizard';
 
   const extras = {
@@ -56,19 +59,15 @@ export async function POST(req: NextRequest) {
       : `${context}\n\nGive me the Deep Strategy dive for this faction in this game.`;
 
   const client = getAnthropic();
-  const model = depth === 'deep' ? MODELS.deep : MODELS.overview;
 
-  const createParams: Parameters<typeof client.messages.stream>[0] = {
-    model,
+  // Both depths run on Sonnet — the Opus tier was the most expensive call in
+  // the app for content that can't cite a rulebook; the deep dive keeps its
+  // longer format, just on the cheaper model.
+  const stream = client.messages.stream({
+    model: MODELS.overview,
     max_tokens: depth === 'deep' ? 4096 : 1500,
     system: strategySystem(depth, { generalGame, voice: resolvedVoice }),
     messages: [{ role: 'user', content: userPrompt }],
-  };
-
-  if (depth === 'deep') {
-    createParams.thinking = { type: 'adaptive' };
-  }
-
-  const stream = client.messages.stream(createParams);
+  });
   return textStreamToResponse(stream);
 }

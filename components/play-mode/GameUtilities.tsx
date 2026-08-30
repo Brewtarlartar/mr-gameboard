@@ -9,16 +9,21 @@ import { Game } from '@/types/game';
 
 interface GameUtilitiesProps {
   game?: Game | null;
+  /** Hide the Score tab (the playing step shows the score sheet as its main stage). */
+  hideScore?: boolean;
 }
 
-export default function GameUtilities({ game }: GameUtilitiesProps = {}) {
-  const [activeTab, setActiveTab] = useState<'dice' | 'score' | 'timer'>('score');
+export default function GameUtilities({ game, hideScore = false }: GameUtilitiesProps = {}) {
+  const [activeTab, setActiveTab] = useState<'dice' | 'score' | 'timer'>(
+    hideScore ? 'dice' : 'score',
+  );
 
   const tabs = [
-    { id: 'score' as const, label: 'Score', icon: Trophy },
+    ...(hideScore ? [] : [{ id: 'score' as const, label: 'Score', icon: Trophy }]),
     { id: 'dice' as const, label: 'Dice', icon: Dice1 },
     { id: 'timer' as const, label: 'Timer', icon: Timer },
   ];
+  const effectiveTab = hideScore && activeTab === 'score' ? 'dice' : activeTab;
 
   return (
     <div className="bg-gradient-to-b from-stone-900/80 to-stone-950/80 border border-amber-900/50 rounded-2xl p-4 shadow-lg shadow-black/30">
@@ -29,7 +34,7 @@ export default function GameUtilities({ game }: GameUtilitiesProps = {}) {
       <div className="flex gap-1 mb-4 p-1 bg-stone-950/70 border border-amber-900/40 rounded-xl">
         {tabs.map((tab) => {
           const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
+          const isActive = effectiveTab === tab.id;
           return (
             <button
               key={tab.id}
@@ -48,9 +53,9 @@ export default function GameUtilities({ game }: GameUtilitiesProps = {}) {
       </div>
 
       <div className="min-h-[240px]">
-        {activeTab === 'dice' && <DiceRoller />}
-        {activeTab === 'score' && <ScoreTracker game={game} />}
-        {activeTab === 'timer' && <TurnTimer />}
+        {effectiveTab === 'dice' && <DiceRoller />}
+        {effectiveTab === 'score' && <ScoreTracker game={game} />}
+        {effectiveTab === 'timer' && <TurnTimer />}
       </div>
     </div>
   );

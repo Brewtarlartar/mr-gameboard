@@ -25,6 +25,35 @@ export default function MainLayout({
   const haptic = useHapticFeedback();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  // Demote the fixed "THE TOME" watermark once the page scrolls: at rest it is
+  // the page hero; scrolled, it fades out and the scrollport's fade mask
+  // collapses (globals.css body.page-scrolled) so the viewport belongs to
+  // content. Hysteresis (48/16) avoids flicker at the threshold.
+  useEffect(() => {
+    const el = document.getElementById('main-scroll');
+    if (!el) return;
+    let ticking = false;
+    const sync = () => {
+      ticking = false;
+      const y = el.scrollTop;
+      const cls = document.body.classList;
+      if (y > 48) cls.add('page-scrolled');
+      else if (y < 16) cls.remove('page-scrolled');
+    };
+    const onScroll = () => {
+      if (!ticking) {
+        ticking = true;
+        requestAnimationFrame(sync);
+      }
+    };
+    sync();
+    el.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      el.removeEventListener('scroll', onScroll);
+      document.body.classList.remove('page-scrolled');
+    };
+  }, [pathname]);
+
   const navItems = [
     { href: '/', label: 'Home', icon: Home },
     { href: '/library', label: 'Library', icon: Library },

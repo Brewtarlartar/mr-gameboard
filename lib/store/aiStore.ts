@@ -7,6 +7,10 @@ export interface WizardMessage {
   role: 'user' | 'assistant';
   content: string;
   timestamp: number;
+  /** Assistant messages only: answer was grounded in the official rulebook PDF. */
+  grounded?: boolean;
+  /** Assistant messages only: user flagged this answer via /api/ai/report. */
+  reported?: boolean;
 }
 
 export interface StrategyEntry {
@@ -32,6 +36,8 @@ interface AIStore {
 
   appendWizardMessage: (msg: WizardMessage) => void;
   updateLastAssistantMessage: (content: string) => void;
+  markLastAssistantGrounded: (grounded: boolean) => void;
+  markMessageReported: (id: string) => void;
   clearWizard: () => void;
 
   saveStrategy: (entry: StrategyEntry) => void;
@@ -73,6 +79,25 @@ export const useAIStore = create<AIStore>()(
           }
           return state;
         }),
+
+      markLastAssistantGrounded: (grounded) =>
+        set((state) => {
+          const msgs = [...state.wizardMessages];
+          for (let i = msgs.length - 1; i >= 0; i--) {
+            if (msgs[i].role === 'assistant') {
+              msgs[i] = { ...msgs[i], grounded };
+              return { wizardMessages: msgs };
+            }
+          }
+          return state;
+        }),
+
+      markMessageReported: (id) =>
+        set((state) => ({
+          wizardMessages: state.wizardMessages.map((m) =>
+            m.id === id ? { ...m, reported: true } : m,
+          ),
+        })),
 
       clearWizard: () => set({ wizardMessages: [] }),
 

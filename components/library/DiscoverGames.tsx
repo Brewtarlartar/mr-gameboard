@@ -536,7 +536,7 @@ function CatalogCard({
             <img
               src={imageUrl}
               alt={game.title}
-              className="relative w-full h-full object-contain z-[1]"
+              className="relative w-full h-full object-cover z-[1]"
               onError={(e) => {
                 if (!imageError && fallbackImage) {
                   setImageError(true);

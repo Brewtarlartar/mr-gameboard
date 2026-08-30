@@ -4,7 +4,10 @@ type SupportedStream =
   | ReturnType<Anthropic['messages']['stream']>
   | ReturnType<Anthropic['beta']['messages']['stream']>;
 
-export function textStreamToResponse(stream: SupportedStream): Response {
+export function textStreamToResponse(
+  stream: SupportedStream,
+  extraHeaders?: Record<string, string>,
+): Response {
   const encoder = new TextEncoder();
   const readable = new ReadableStream<Uint8Array>({
     async start(controller) {
@@ -29,6 +32,7 @@ export function textStreamToResponse(stream: SupportedStream): Response {
       'Content-Type': 'text/plain; charset=utf-8',
       'Cache-Control': 'no-store, no-transform',
       'X-Accel-Buffering': 'no',
+      ...extraHeaders,
     },
   });
 }

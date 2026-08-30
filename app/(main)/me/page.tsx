@@ -201,13 +201,13 @@ export default function MePage() {
           />
           <QuickLink
             href="/play"
-            title="The Arena"
+            title="The Play Table"
             description="Begin a new game at thy table"
             icon="/crystal-ball.png"
           />
           <QuickLink
             href="/analytics"
-            title="The Chronicle"
+            title="The Chronicle · Stats"
             description={`${sessions.length} ${sessions.length === 1 ? 'tale' : 'tales'} scribed`}
             icon="/skip-the-rules.png"
           />

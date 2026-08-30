@@ -123,6 +123,26 @@ body.ai-panel-open .tome-watermark {
   opacity: 0;
 }
 
+/* Scrolled state (see app/(main)/layout.tsx): the watermark yields the
+   viewport to content, and the scrollport's fade band collapses to a thin
+   edge under the nav / status bar. */
+body.page-scrolled .tome-watermark {
+  opacity: 0;
+}
+
+body.page-scrolled .tome-page-scroll {
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0) 0,
+    rgba(255, 255, 255, 1) calc(env(safe-area-inset-top, 0px) + 16px)
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0) 0,
+    rgba(255, 255, 255, 1) calc(env(safe-area-inset-top, 0px) + 16px)
+  );
+}
+
 /* Intro splash: title + subtitle reuse the watermark styling at a size
    tuned for the bottom of the splash rather than a full-bleed header. */
 .intro-title {

@@ -8,11 +8,18 @@ import {
   pushFullLibrary,
 } from '@/lib/sync/librarySync';
 import {
+  pullChronicle,
+  mergeById,
+  pushFullChronicle,
+} from '@/lib/sync/chronicleSync';
+import {
   getGameLibrary,
   getPreferences,
   savePreferences,
 } from '@/lib/storage';
 import { useGameStore } from '@/lib/store/gameStore';
+import { usePlayHistoryStore } from '@/lib/store/playHistoryStore';
+import { useWishlistStore } from '@/lib/store/wishlistStore';
 
 const STORAGE_KEYS = {
   GAME_LIBRARY: 'mr-boardgame-library',
@@ -26,17 +33,17 @@ const STORAGE_KEYS = {
 // Clearing them on sign-out prevents that — and it's safe because the server
 // holds the copy, so the signed-out user's data returns when they sign back in.
 //
-// We deliberately do NOT clear the local-only stores here (wishlist,
-// play-history, play-session draft, AI caches). Those never sync to the server,
-// so wiping them on sign-out (which also fires on silent token expiry) would
-// permanently destroy data with no way to restore it, and they don't upload into
-// another account anyway. They stay on the device; "Clear all data" on the Me tab
-// is the deliberate way to erase them.
+// Play history and wishlist joined this list when Chronicle sync shipped
+// (2026-08-30) — they now mirror to play_sessions / wishlist_items. The
+// remaining local-only stores (play-session draft, AI caches) stay untouched:
+// they never sync, so wiping them here would permanently destroy data.
 const SYNCED_KEYS = [
   'mr-boardgame-library',
   'mr-boardgame-favorites',
   'mr-boardgame-custom-games',
   'mr-boardgame-preferences',
+  'play-history-storage',
+  'wishlist-storage',
 ] as const;
 
 /**
@@ -52,9 +59,11 @@ function clearLocalUserData() {
       /* ignore */
     }
   }
-  // Reset the in-memory game store so the UI reflects the wipe immediately
+  // Reset the in-memory stores so the UI reflects the wipe immediately
   // (localStorage removal alone doesn't clear already-loaded state).
   useGameStore.setState({ games: [], favorites: [], customGames: [] });
+  usePlayHistoryStore.setState({ sessions: [] });
+  useWishlistStore.setState({ wishlist: [] });
 }
 
 /**
@@ -97,6 +106,21 @@ export default function SessionSync() {
 
         // Reload the Zustand store from the refreshed localStorage.
         useGameStore.getState().loadLibrary();
+
+        // Chronicle (play history + wishlist): same pull → merge → reconcile
+        // shape as the library. Server wins on id conflicts; union otherwise.
+        const serverChronicle = await pullChronicle(userId);
+        const mergedSessions = mergeById(
+          usePlayHistoryStore.getState().sessions,
+          serverChronicle.sessions,
+        );
+        const mergedWishlist = mergeById(
+          useWishlistStore.getState().wishlist,
+          serverChronicle.wishlist,
+        );
+        usePlayHistoryStore.setState({ sessions: mergedSessions });
+        useWishlistStore.setState({ wishlist: mergedWishlist });
+        await pushFullChronicle(userId, mergedSessions, mergedWishlist);
       } catch (err) {
         console.error('[SessionSync] hydration failed:', err);
       }

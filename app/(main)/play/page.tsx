@@ -268,7 +268,7 @@ export default function PlayModePage() {
         </div>
 
         <div className="lg:col-span-1 space-y-6">
-          <GameUtilities game={selectedGame} />
+          <GameUtilities game={selectedGame} hideScore={currentStep === 'playing'} />
         </div>
       </div>
 

@@ -199,7 +199,7 @@ export default function LibraryPage() {
               height={24}
               className="w-6 h-6 md:w-5 md:h-5 shrink-0 object-contain drop-shadow-[0_0_4px_rgba(251,191,36,0.4)] [filter:sepia(1)_saturate(3)_hue-rotate(-10deg)_brightness(0.95)]"
             />
-            <span>Add Game</span>
+            <span>Custom Game</span>
           </button>
         </div>
 
@@ -218,7 +218,7 @@ export default function LibraryPage() {
             {addError}
           </p>
         ) : (
-          <p className="text-[11px] text-amber-200/50 italic font-serif px-1">
+          <p className="text-xs text-amber-200/70 italic font-serif px-1">
             Or scroll down to browse the catalog and add games by category.
           </p>
         )}
