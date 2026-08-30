@@ -3,13 +3,13 @@
 import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
-import { MessageCircle, Target, Swords, BookOpenCheck, ChevronRight } from 'lucide-react';
+import { MessageCircle, Target, BookOpenCheck, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import WizardChatModal from './WizardChatModal';
 import StrategyModal from './StrategyModal';
 import TeachMeModal from './TeachMeModal';
 
-type ActiveModal = 'wizard' | 'overview' | 'deep' | 'teach' | null;
+type ActiveModal = 'wizard' | 'overview' | 'teach' | null;
 
 interface Card {
   id: Exclude<ActiveModal, null>;
@@ -29,17 +29,10 @@ const CARDS: Card[] = [
   },
   {
     id: 'overview',
-    label: 'Strategy Overview',
-    description: 'How to win with thy faction',
+    label: 'Strategy Counsel',
+    description: 'Quick brief or a deep dive — how to win',
     icon: Target,
     image: '/map.png',
-  },
-  {
-    id: 'deep',
-    label: 'Deep Strategy',
-    description: 'Openings, mid-game, counters',
-    icon: Swords,
-    image: '/deep-strategy.png',
   },
   {
     id: 'teach',
@@ -210,12 +203,12 @@ export default function AICompanionSection() {
                     {card.id === 'wizard' && (
                       <WizardChatModal inline isOpen={isActive} onClose={close} />
                     )}
-                    {(card.id === 'overview' || card.id === 'deep') && (
+                    {card.id === 'overview' && (
                       <StrategyModal
                         inline
                         isOpen={isActive}
                         onClose={close}
-                        initialDepth={card.id === 'deep' ? 'deep' : 'overview'}
+                        initialDepth="overview"
                       />
                     )}
                     {card.id === 'teach' && (

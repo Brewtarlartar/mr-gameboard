@@ -59,19 +59,15 @@ export async function POST(req: NextRequest) {
       : `${context}\n\nGive me the Deep Strategy dive for this faction in this game.`;
 
   const client = getAnthropic();
-  const model = depth === 'deep' ? MODELS.deep : MODELS.overview;
 
-  const createParams: Parameters<typeof client.messages.stream>[0] = {
-    model,
+  // Both depths run on Sonnet — the Opus tier was the most expensive call in
+  // the app for content that can't cite a rulebook; the deep dive keeps its
+  // longer format, just on the cheaper model.
+  const stream = client.messages.stream({
+    model: MODELS.overview,
     max_tokens: depth === 'deep' ? 4096 : 1500,
     system: strategySystem(depth, { generalGame, voice: resolvedVoice }),
     messages: [{ role: 'user', content: userPrompt }],
-  };
-
-  if (depth === 'deep') {
-    createParams.thinking = { type: 'adaptive' };
-  }
-
-  const stream = client.messages.stream(createParams);
+  });
   return textStreamToResponse(stream);
 }
