@@ -24,7 +24,7 @@ export default function AnalyticsPage() {
           The Chronicle
         </h1>
         <p className="text-amber-200/70 text-sm font-serif italic">
-          Every battle, every victory — scribed for posterity.
+          Thy play stats — every battle and victory, scribed for posterity.
         </p>
       </motion.div>
 
@@ -87,7 +87,9 @@ export default function AnalyticsPage() {
             height={20}
             className="w-5 h-5 object-contain drop-shadow-[0_0_3px_rgba(0,0,0,0.45)]"
           />
-          <span>Scribe a Session</span>
+          <span>
+            Scribe a Session <span className="opacity-70 font-normal">· log a play</span>
+          </span>
         </button>
       </motion.div>
 

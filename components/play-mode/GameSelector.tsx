@@ -1,10 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { Search, Gamepad2 } from 'lucide-react';
+import { Search, Gamepad2, Plus } from 'lucide-react';
 import { useGameStore } from '@/lib/store/gameStore';
 import { Game } from '@/types/game';
 import Image from 'next/image';
+import Link from 'next/link';
 
 interface GameSelectorProps {
   onSelectGame: (game: Game) => void;
@@ -47,6 +48,15 @@ export default function GameSelector({
               ? 'No tomes match thy search'
               : 'Thy library is empty. Add a game to begin.'}
           </p>
+          {!searchQuery && (
+            <Link
+              href="/discover"
+              className="inline-flex items-center gap-2 mt-4 px-5 py-2.5 bg-gradient-to-b from-amber-500 to-amber-700 hover:from-amber-400 hover:to-amber-600 border border-amber-400/40 text-stone-950 font-serif font-semibold rounded-lg shadow-md shadow-amber-900/30 transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Add games from the catalog
+            </Link>
+          )}
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-[440px] overflow-y-auto pr-2 scrollbar-hide">

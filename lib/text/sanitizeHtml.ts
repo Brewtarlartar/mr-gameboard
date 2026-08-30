@@ -62,6 +62,18 @@ const NAMED_ENTITIES: Record<string, string> = {
   uacute: 'ú',
   Ntilde: 'Ñ',
   ntilde: 'ñ',
+  pound: '£',
+  euro: '€',
+  yen: '¥',
+  cent: '¢',
+  sect: '§',
+  para: '¶',
+  plusmn: '±',
+  frac12: '½',
+  frac14: '¼',
+  frac34: '¾',
+  times: '×',
+  divide: '÷',
 };
 
 // Decode entities to real characters WITHOUT stripping tags. Single pass so we

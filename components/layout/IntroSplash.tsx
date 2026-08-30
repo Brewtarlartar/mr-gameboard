@@ -5,17 +5,17 @@ import Image from 'next/image';
 import { AnimatePresence, motion } from 'framer-motion';
 
 const STORAGE_KEY = 'tome-intro-seen';
-const DURATION_MS = 4500;
+const DURATION_MS = 2500;
 const EMBER_COUNT = 16;
 const SPLASH_VOLUME = 0.85;
-const FADE_START_MS = 2800;
+const FADE_START_MS = 1400;
 const FADE_DURATION_MS = 700;
 
 export default function IntroSplash() {
   // `show` starts as `null` so the splash does NOT render on the server or on
   // the very first client paint. We only flip it to `true` after we've checked
-  // sessionStorage, which prevents a brief "flash + fade" on subsequent
-  // navigations within the same session (where the intro should stay hidden).
+  // localStorage, which prevents a brief "flash + fade" on later visits
+  // (the intro plays once ever; `?intro` forces a replay for demos).
   const [show, setShow] = useState<boolean | null>(null);
   // `started` flips on the user's first tap. iOS Safari (and any web context)
   // refuses audio.play() without a prior user gesture, so the splash music
@@ -27,10 +27,12 @@ export default function IntroSplash() {
     const force = new URLSearchParams(window.location.search).has('intro');
     let seen = false;
     try {
-      seen = !force && !!sessionStorage.getItem(STORAGE_KEY);
+      // Read both stores: sessionStorage keeps older visitors' seen-flag valid
+      // within an open session from before the localStorage switch.
+      seen = !force && !!(localStorage.getItem(STORAGE_KEY) || sessionStorage.getItem(STORAGE_KEY));
     } catch {
-      // If sessionStorage is unavailable, treat the intro as already seen
-      // so we don't get stuck on a splash that can't remember being dismissed.
+      // If storage is unavailable, treat the intro as already seen so we
+      // don't get stuck on a splash that can't remember being dismissed.
       seen = true;
     }
     if (seen) {
@@ -40,6 +42,16 @@ export default function IntroSplash() {
     setShow(true);
   }, []);
 
+  const finish = () => {
+    try {
+      localStorage.setItem(STORAGE_KEY, '1');
+    } catch {}
+    try {
+      window.dispatchEvent(new Event('tome-audio-start'));
+    } catch {}
+    setShow(false);
+  };
+
   useEffect(() => {
     if (!started) return;
     const audio = splashAudioRef.current;
@@ -48,15 +60,7 @@ export default function IntroSplash() {
       audio.play().catch(() => {});
     }
 
-    const readyTimer = window.setTimeout(() => {
-      try {
-        sessionStorage.setItem(STORAGE_KEY, '1');
-      } catch {}
-      try {
-        window.dispatchEvent(new Event('tome-audio-start'));
-      } catch {}
-      setShow(false);
-    }, DURATION_MS);
+    const readyTimer = window.setTimeout(() => finish(), DURATION_MS);
 
     let rafId = 0;
     const fadeTimer = window.setTimeout(() => {
@@ -83,9 +87,12 @@ export default function IntroSplash() {
     };
   }, [started]);
 
+  // First tap starts the tale; a second tap skips straight into the app.
   const handleTap = () => {
     if (!started) {
       setStarted(true);
+    } else {
+      finish();
     }
   };
 
