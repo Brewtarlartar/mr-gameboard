@@ -81,9 +81,10 @@ export async function POST(req: NextRequest) {
     name: clampString(p?.name, AI_LIMITS.teach.maxNameChars),
   }));
   const extras = { gameName: safeGameName, playerCount, players: safePlayers };
+  // Rulebook attachment (full PDF in context) is signed-in-only, matching chat.
   const [hydrated, rulebook] = await Promise.all([
     bggId ? buildHydratedGameContext(supabase, bggId, extras) : Promise.resolve(null),
-    bggId ? getRulebookAttachment(supabase, bggId) : Promise.resolve(null),
+    bggId && userData.user ? getRulebookAttachment(supabase, bggId) : Promise.resolve(null),
   ]);
   const context = hydrated || buildGameContext(extras);
   const userPrompt = `${context}\n\nTeach this specific group how to play. Return only the JSON object described in the system prompt.`;

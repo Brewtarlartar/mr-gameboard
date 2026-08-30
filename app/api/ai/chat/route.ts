@@ -56,9 +56,11 @@ export async function POST(req: NextRequest) {
     return new Response('First message must be from user', { status: 400 });
   }
 
+  // Rulebook grounding (Sonnet + full PDF, ~25-50x the Haiku path's cost) is
+  // signed-in-only; anonymous callers get the Haiku path with hydrated context.
   const [hydrated, rulebook] = await Promise.all([
     bggId ? buildHydratedGameContext(supabase, bggId, { gameName }) : Promise.resolve(null),
-    bggId ? getRulebookAttachment(supabase, bggId) : Promise.resolve(null),
+    bggId && userData.user ? getRulebookAttachment(supabase, bggId) : Promise.resolve(null),
   ]);
   // Cap the client-supplied context so it can't be used as an unbounded free-text
   // channel into the model (the server-built `hydrated` context is already bounded).

@@ -4,16 +4,21 @@ import type { NextRequest } from 'next/server';
 
 type RouteKey = 'chat' | 'strategy' | 'teach';
 
+// Anonymous tiers are a teaser, not a product: anon chat runs Haiku-only (the
+// rulebook/Sonnet path requires sign-in — see app/api/ai/chat/route.ts), so the
+// worst-case anonymous spend per IP/day stays under ~$0.50.
 const LIMITS_ANON: Record<RouteKey, { minute: number; day: number }> = {
-  chat: { minute: 20, day: 200 },
-  strategy: { minute: 10, day: 50 },
-  teach: { minute: 5, day: 20 },
+  chat: { minute: 5, day: 10 },
+  strategy: { minute: 2, day: 2 },
+  teach: { minute: 2, day: 2 },
 };
 
+// Abuse ceilings, not product caps — far above real game-night usage but low
+// enough that one hostile account can't run up a meaningful Anthropic bill.
 const LIMITS_SIGNED_IN: Record<RouteKey, { minute: number; day: number }> = {
-  chat: { minute: 60, day: 1000 },
-  strategy: { minute: 30, day: 200 },
-  teach: { minute: 15, day: 80 },
+  chat: { minute: 15, day: 100 },
+  strategy: { minute: 10, day: 30 },
+  teach: { minute: 10, day: 20 },
 };
 
 let redisSingleton: Redis | null = null;
