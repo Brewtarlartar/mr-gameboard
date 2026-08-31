@@ -8,6 +8,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
+import { apiFetch } from '@/lib/api/client';
 /* eslint-disable @next/next/no-img-element */
 import { BookOpenCheck, Check, ExternalLink, Loader2, X } from 'lucide-react';
 import Button from '@/components/ui/Button';
@@ -42,7 +43,7 @@ export default function RulebookReviewPage() {
 
   const load = useCallback(async (tok: string) => {
     setError(null);
-    const res = await fetch('/api/admin/rulebook-links', {
+    const res = await apiFetch('/api/admin/rulebook-links', {
       headers: { Authorization: `Bearer ${tok}` },
     });
     if (res.status === 401) {
@@ -77,7 +78,7 @@ export default function RulebookReviewPage() {
   const decide = async (id: string, action: 'approve' | 'reject') => {
     setBusyId(id);
     try {
-      const res = await fetch('/api/admin/rulebook-links', {
+      const res = await apiFetch('/api/admin/rulebook-links', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ id, action }),

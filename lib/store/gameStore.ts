@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { apiFetch } from '@/lib/api/client';
 import { Game, ChatMessage, PlaySession } from '@/types/game';
 import { SeedGame } from '@/types/seedGame';
 import {
@@ -101,7 +102,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
     try {
       // Fetch the seed games data from the API
-      const response = await fetch('/api/discover');
+      const response = await apiFetch('/api/discover');
       if (response.ok) {
         const data = await response.json();
         set({
@@ -271,7 +272,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
       console.log('[GameStore] Starting library enrichment...');
       
       // Call the enrichment API
-      const response = await fetch('/api/library/enrich', {
+      const response = await apiFetch('/api/library/enrich', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -336,7 +337,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const gamesToEnrich = gamesNeedingEnrichment.slice(0, 5);
     
     try {
-      const response = await fetch('/api/library/enrich', {
+      const response = await apiFetch('/api/library/enrich', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ games: get().games }),
@@ -383,7 +384,7 @@ function persistGameToServerCache(game: Game) {
   if (!game.bggId || !Number.isFinite(game.bggId)) return;
 
   try {
-    fetch('/api/games/cache', {
+    apiFetch('/api/games/cache', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ bggId: game.bggId, game }),

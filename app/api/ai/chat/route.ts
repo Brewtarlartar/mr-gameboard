@@ -8,6 +8,7 @@ import { textStreamToResponse } from '@/lib/ai/stream';
 import { checkRateLimit, rateLimitResponse } from '@/lib/rate-limit';
 import { checkChatSize, AI_LIMITS, clampString } from '@/lib/ai/limits';
 import { createClient as createSupabaseServerClient } from '@/lib/supabase/server';
+import { getRouteUser } from '@/lib/supabase/routeAuth';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -24,8 +25,8 @@ interface ChatRequestBody {
 
 export async function POST(req: NextRequest) {
   const supabase = createSupabaseServerClient();
-  const { data: userData } = await supabase.auth.getUser();
-  const gate = await checkRateLimit(req, 'chat', userData.user?.id ?? null);
+  const user = await getRouteUser(req); // cookie (web) or bearer (native shell)
+  const gate = await checkRateLimit(req, 'chat', user?.id ?? null);
   if (!gate.ok) return rateLimitResponse(gate);
 
   let body: ChatRequestBody;
@@ -60,7 +61,7 @@ export async function POST(req: NextRequest) {
   // signed-in-only; anonymous callers get the Haiku path with hydrated context.
   const [hydrated, rulebook] = await Promise.all([
     bggId ? buildHydratedGameContext(supabase, bggId, { gameName }) : Promise.resolve(null),
-    bggId && userData.user ? getRulebookAttachment(supabase, bggId) : Promise.resolve(null),
+    bggId && user ? getRulebookAttachment(supabase, bggId) : Promise.resolve(null),
   ]);
   // Cap the client-supplied context so it can't be used as an unbounded free-text
   // channel into the model (the server-built `hydrated` context is already bounded).

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { checkRateLimit, rateLimitResponse } from '@/lib/rate-limit';
 import { clampString } from '@/lib/ai/limits';
-import { createClient as createSupabaseServerClient } from '@/lib/supabase/server';
+import { getRouteUser } from '@/lib/supabase/routeAuth';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -28,9 +28,8 @@ interface ReportRequestBody {
 }
 
 export async function POST(req: NextRequest) {
-  const supabase = createSupabaseServerClient();
-  const { data: userData } = await supabase.auth.getUser();
-  const gate = await checkRateLimit(req, 'report', userData.user?.id ?? null);
+  const user = await getRouteUser(req); // cookie (web) or bearer (native shell)
+  const gate = await checkRateLimit(req, 'report', user?.id ?? null);
   if (!gate.ok) return rateLimitResponse(gate);
 
   let body: ReportRequestBody;
@@ -53,7 +52,7 @@ export async function POST(req: NextRequest) {
   }
 
   const { error } = await service.from('ai_response_reports').insert({
-    user_id: userData.user?.id ?? null,
+    user_id: user?.id ?? null,
     bgg_id: Number.isFinite(body.bggId) ? body.bggId : null,
     game_name: clampString(body.gameName, 200).trim() || null,
     question,
