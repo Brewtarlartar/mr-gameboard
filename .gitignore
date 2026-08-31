@@ -67,3 +67,5 @@ yarn-error.log*
 next-env.d.ts
 .cap-excluded/
 out/
+ios/App/App/public/
+android/app/src/main/assets/public/
