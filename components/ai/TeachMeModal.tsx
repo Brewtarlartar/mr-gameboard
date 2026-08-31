@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useMemo } from 'react';
+import { apiFetch } from '@/lib/api/client';
 import { createPortal } from 'react-dom';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -138,7 +139,7 @@ export default function TeachMeModal({
     abortRef.current = controller;
 
     try {
-      const response = await fetch('/api/ai/teach', {
+      const response = await apiFetch('/api/ai/teach', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { apiFetch } from '@/lib/api/client';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -146,7 +147,7 @@ export default function GameDetail({
       setIsLoadingDescription(true);
       setLiveDescription(null);
 
-      fetch(`/api/bgg/details/${game.bggId}`)
+      apiFetch(`/api/bgg/details/${game.bggId}`)
         .then((res) => {
           if (!res.ok) throw new Error(`Details API returned ${res.status}`);
           return res.json();
@@ -155,7 +156,7 @@ export default function GameDetail({
           if (data?.description && data.description.length > currentDescLength) {
             setLiveDescription(data.description);
           } else {
-            return fetch(`/api/bgg/game/${game.bggId}`)
+            return apiFetch(`/api/bgg/game/${game.bggId}`)
               .then((res) => (res.ok ? res.json() : null))
               .then((gameData) => {
                 if (gameData?.game?.description && gameData.game.description.length > currentDescLength) {
@@ -165,7 +166,7 @@ export default function GameDetail({
           }
         })
         .catch(() => {
-          fetch(`/api/bgg/game/${game.bggId}`)
+          apiFetch(`/api/bgg/game/${game.bggId}`)
             .then((res) => (res.ok ? res.json() : null))
             .then((gameData) => {
               if (gameData?.game?.description && gameData.game.description.length > currentDescLength) {

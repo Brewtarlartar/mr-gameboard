@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { apiFetch } from '@/lib/api/client';
 import { createPortal } from 'react-dom';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -98,7 +99,7 @@ export default function StrategyModal({
     abortRef.current = controller;
 
     try {
-      const response = await fetch('/api/ai/strategy', {
+      const response = await apiFetch('/api/ai/strategy', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -178,7 +179,7 @@ export default function StrategyModal({
     followUpAbortRef.current = controller;
 
     try {
-      const response = await fetch('/api/ai/chat', {
+      const response = await apiFetch('/api/ai/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -1,6 +1,45 @@
 import { createBrowserClient } from '@supabase/ssr';
+import { createClient as createSupabaseJsClient, type SupabaseClient } from '@supabase/supabase-js';
+import { Preferences } from '@capacitor/preferences';
+
+// In the Capacitor shell (NEXT_PUBLIC_CAPACITOR_BUILD=1, statically inlined so
+// the other branch is dead code in each bundle) the cookie-based @supabase/ssr
+// browser client is unusable: it persists sessions exclusively via
+// document.cookie, which is unreliable on the capacitor:// scheme and pointless
+// without a same-origin server. The native build uses plain supabase-js with a
+// Capacitor Preferences storage adapter instead; PKCE flow, no URL detection
+// (the OAuth code arrives via deep link and is exchanged explicitly).
+const capacitorStorage = {
+  getItem: async (key: string) => (await Preferences.get({ key })).value,
+  setItem: async (key: string, value: string) => {
+    await Preferences.set({ key, value });
+  },
+  removeItem: async (key: string) => {
+    await Preferences.remove({ key });
+  },
+};
+
+let nativeClient: SupabaseClient | null = null;
 
 export const createClient = () => {
+  if (process.env.NEXT_PUBLIC_CAPACITOR_BUILD === '1') {
+    if (!nativeClient) {
+      nativeClient = createSupabaseJsClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
+        {
+          auth: {
+            storage: capacitorStorage,
+            persistSession: true,
+            autoRefreshToken: true,
+            detectSessionInUrl: false,
+            flowType: 'pkce',
+          },
+        },
+      );
+    }
+    return nativeClient;
+  }
   return createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL || '',
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''

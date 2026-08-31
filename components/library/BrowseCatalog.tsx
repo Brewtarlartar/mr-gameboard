@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { apiFetch } from '@/lib/api/client';
 import { motion } from 'framer-motion';
 import {
   Loader2,
@@ -51,7 +52,7 @@ export default function BrowseCatalog({ onGameSelect, defaultOpen = false }: Bro
     if (!isOpen || fetchedRef.current) return;
     fetchedRef.current = true;
     setIsLoading(true);
-    fetch('/api/games/browse')
+    apiFetch('/api/games/browse')
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (data?.ok && Array.isArray(data.sections)) {
@@ -67,7 +68,7 @@ export default function BrowseCatalog({ onGameSelect, defaultOpen = false }: Bro
     if (!game.bggId || ownedBggIds.has(game.bggId)) return;
     setAddingId(game.bggId);
     try {
-      const res = await fetch(`/api/bgg/game/${game.bggId}`);
+      const res = await apiFetch(`/api/bgg/game/${game.bggId}`);
       if (res.ok) {
         const data = await res.json();
         addGame(data.game);
