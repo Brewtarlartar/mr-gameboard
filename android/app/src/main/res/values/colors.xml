@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Matches capacitor.config.ts backgroundColor — fills the window behind the
+         WebView so system-bar insets (older WebViews pad instead of drawing
+         edge-to-edge) never show a white strip. -->
+    <color name="tome_background">#1c1917</color>
+</resources>
