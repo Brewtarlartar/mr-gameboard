@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { apiFetch } from '@/lib/api/client';
 import { motion } from 'framer-motion';
 import { Loader2, Plus, RefreshCw, Star, Users, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useGameStore } from '@/lib/store/gameStore';
@@ -76,7 +77,7 @@ export default function Recommendations({ onGameSelect }: RecommendationsProps) 
   const fetchRecommendations = useCallback(async () => {
     setIsLoading(true);
     try {
-      const res = await fetch('/api/games/recommendations', {
+      const res = await apiFetch('/api/games/recommendations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -112,7 +113,7 @@ export default function Recommendations({ onGameSelect }: RecommendationsProps) 
     if (!game.bggId) return;
     setAddingId(game.bggId);
     try {
-      const response = await fetch(`/api/bgg/game/${game.bggId}`);
+      const response = await apiFetch(`/api/bgg/game/${game.bggId}`);
       if (response.ok) {
         const data = await response.json();
         addGame(data.game);

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { apiFetch } from '@/lib/api/client';
 import { Loader2, Library } from 'lucide-react';
 import Dialog from '@/components/ui/Dialog';
 import Button from '@/components/ui/Button';
@@ -52,7 +53,7 @@ export default function BggImportModal({ isOpen, onClose }: Props) {
     setError(null);
     setResult(null);
     try {
-      const res = await fetch(`/api/bgg/collection?username=${encodeURIComponent(name)}`);
+      const res = await apiFetch(`/api/bgg/collection?username=${encodeURIComponent(name)}`);
       const body = await res.json();
       if (!res.ok || !body.ok) {
         setError(body.error ?? 'Import failed. Try again shortly.');

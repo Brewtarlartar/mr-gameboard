@@ -3,15 +3,21 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { ChevronLeft, Loader2, Mail } from 'lucide-react';
+import { ChevronLeft, KeyRound, Loader2, Mail } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { IS_NATIVE } from '@/lib/api/client';
+import { signInWithGoogleNative } from '@/lib/auth/native';
 
 export default function SignInPage() {
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState<'idle' | 'sending' | 'sent' | 'error'>('idle');
   const [googleLoading, setGoogleLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [otpCode, setOtpCode] = useState('');
+  const [verifying, setVerifying] = useState(false);
 
   useEffect(() => {
     const urlError = new URLSearchParams(window.location.search).get('error');
@@ -21,10 +27,35 @@ export default function SignInPage() {
     }
   }, []);
 
+  // In the shell, sign-in completes out-of-band (deep link or OTP verify) —
+  // leave this page the moment a session exists.
+  useEffect(() => {
+    if (!IS_NATIVE) return;
+    const supabase = createClient();
+    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_IN') router.replace('/me');
+    });
+    return () => sub.subscription.unsubscribe();
+  }, [router]);
+
   const handleGoogleSignIn = async () => {
     if (googleLoading || status === 'sending') return;
     setGoogleLoading(true);
     setErrorMessage(null);
+
+    if (IS_NATIVE) {
+      // System browser + deep link back into the shell (Google forbids OAuth
+      // inside embedded WebViews).
+      try {
+        await signInWithGoogleNative();
+      } catch (err) {
+        setStatus('error');
+        setErrorMessage(err instanceof Error ? err.message : 'Sign-in failed');
+      } finally {
+        setGoogleLoading(false);
+      }
+      return;
+    }
 
     const supabase = createClient();
     const { error } = await supabase.auth.signInWithOAuth({
@@ -50,11 +81,12 @@ export default function SignInPage() {
     setErrorMessage(null);
 
     const supabase = createClient();
+    // Native: no redirect — the email's 6-digit code is typed into the app.
     const { error } = await supabase.auth.signInWithOtp({
       email: trimmed,
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
-      },
+      options: IS_NATIVE
+        ? undefined
+        : { emailRedirectTo: `${window.location.origin}/auth/callback` },
     });
 
     if (error) {
@@ -64,6 +96,27 @@ export default function SignInPage() {
     }
 
     setStatus('sent');
+  };
+
+  const handleVerifyCode = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const code = otpCode.trim();
+    if (!code || verifying) return;
+    setVerifying(true);
+    setErrorMessage(null);
+
+    const supabase = createClient();
+    const { error } = await supabase.auth.verifyOtp({
+      email: email.trim(),
+      token: code,
+      type: 'email',
+    });
+    setVerifying(false);
+    if (error) {
+      setErrorMessage(error.message);
+      return;
+    }
+    router.replace('/me');
   };
 
   return (
@@ -98,14 +151,54 @@ export default function SignInPage() {
               A scroll hath been sent
             </h2>
             <p className="text-amber-200/70 text-sm font-serif leading-relaxed">
-              Check <span className="text-amber-100 font-semibold">{email}</span> for a
-              magic link. Click it to enter thy keep.
+              {IS_NATIVE ? (
+                <>
+                  Check <span className="text-amber-100 font-semibold">{email}</span> and
+                  enter the 6-digit code from the email below.
+                </>
+              ) : (
+                <>
+                  Check <span className="text-amber-100 font-semibold">{email}</span> for a
+                  magic link. Click it to enter thy keep.
+                </>
+              )}
             </p>
+            {IS_NATIVE && (
+              <form onSubmit={handleVerifyCode} className="mt-4 space-y-3">
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  maxLength={6}
+                  value={otpCode}
+                  onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, ''))}
+                  placeholder="123456"
+                  className="w-40 mx-auto block text-center tracking-[0.4em] bg-stone-950/70 border border-amber-900/50 rounded-xl px-3 py-2.5 text-amber-100 text-lg font-serif placeholder-amber-200/30 focus:outline-none focus:border-amber-500/60"
+                  aria-label="6-digit sign-in code"
+                />
+                {errorMessage && (
+                  <p className="text-red-300 text-xs font-serif">{errorMessage}</p>
+                )}
+                <button
+                  type="submit"
+                  disabled={otpCode.trim().length < 6 || verifying}
+                  className="w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-amber-500 hover:bg-amber-400 disabled:bg-stone-800 disabled:text-stone-500 text-stone-950 font-serif font-semibold rounded-xl transition-colors"
+                >
+                  {verifying ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <KeyRound className="w-4 h-4" />
+                  )}
+                  <span>{verifying ? 'Verifying…' : 'Enter thy keep'}</span>
+                </button>
+              </form>
+            )}
             <button
               type="button"
               onClick={() => {
                 setStatus('idle');
                 setEmail('');
+                setOtpCode('');
               }}
               className="mt-4 text-xs font-semibold text-amber-300 hover:text-amber-200 underline"
             >

@@ -6,6 +6,7 @@ import { textStreamToResponse } from '@/lib/ai/stream';
 import { checkRateLimit, rateLimitResponse } from '@/lib/rate-limit';
 import { AI_LIMITS, clampString } from '@/lib/ai/limits';
 import { createClient as createSupabaseServerClient } from '@/lib/supabase/server';
+import { getRouteUser } from '@/lib/supabase/routeAuth';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -21,8 +22,8 @@ interface StrategyRequestBody {
 
 export async function POST(req: NextRequest) {
   const supabase = createSupabaseServerClient();
-  const { data: userData } = await supabase.auth.getUser();
-  const gate = await checkRateLimit(req, 'strategy', userData.user?.id ?? null);
+  const user = await getRouteUser(req); // cookie (web) or bearer (native shell)
+  const gate = await checkRateLimit(req, 'strategy', user?.id ?? null);
   if (!gate.ok) return rateLimitResponse(gate);
 
   let body: StrategyRequestBody;
@@ -38,9 +39,9 @@ export async function POST(req: NextRequest) {
   if (!gName || (body.depth !== 'overview' && body.depth !== 'deep')) {
     return new Response('gameName and depth are required', { status: 400 });
   }
-  // Deep strategy runs Opus (the most expensive call in the app) — signed-in
-  // only. Anonymous requests degrade gracefully to the Sonnet overview tier.
-  const depth = body.depth === 'deep' && userData.user ? 'deep' : 'overview';
+  // Deep strategy (the longer, pricier call) is signed-in only. Anonymous
+  // requests degrade gracefully to the overview tier.
+  const depth = body.depth === 'deep' && user ? 'deep' : 'overview';
   const resolvedVoice: AiVoice = voice === 'plain' ? 'plain' : 'wizard';
 
   const extras = {

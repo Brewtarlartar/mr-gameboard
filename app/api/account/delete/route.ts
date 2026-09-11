@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { getRouteUser } from '@/lib/supabase/routeAuth';
 import { createClient as createSupabaseServerClient } from '@/lib/supabase/server';
 
 export const runtime = 'nodejs';
@@ -10,11 +11,11 @@ export const dynamic = 'force-dynamic';
  * have a valid session; the account is identified from that session, never from
  * the request body, so one user can never delete another.
  */
-export async function POST() {
-  const supabase = createSupabaseServerClient();
-  const { data: userData, error: authError } = await supabase.auth.getUser();
-  const user = userData.user;
-  if (authError || !user) {
+export async function POST(req: NextRequest) {
+  // Works from the web (cookie session) AND the native shells (bearer token) —
+  // in-app account deletion must function inside the Capacitor WebView too.
+  const user = await getRouteUser(req);
+  if (!user) {
     return NextResponse.json({ error: 'Not signed in' }, { status: 401 });
   }
 
@@ -49,8 +50,9 @@ export async function POST() {
     return NextResponse.json({ error: deleteError.message }, { status: 500 });
   }
 
-  // Sign the current session out so the client is fully logged out.
-  await supabase.auth.signOut();
+  // Clear the web cookie session if one exists. Native (bearer) callers have
+  // nothing server-side to clear — their tokens die with the deleted user.
+  await createSupabaseServerClient().auth.signOut();
 
   return NextResponse.json({ ok: true });
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { apiFetch } from '@/lib/api/client';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/client';
 
@@ -28,7 +29,7 @@ export default function DeleteAccountPage() {
     setStatus('deleting');
     setError(null);
     try {
-      const res = await fetch('/api/account/delete', { method: 'POST' });
+      const res = await apiFetch('/api/account/delete', { method: 'POST' });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.error || `Deletion failed (${res.status})`);

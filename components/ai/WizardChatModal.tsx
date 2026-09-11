@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { apiFetch } from '@/lib/api/client';
 import { createPortal } from 'react-dom';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -129,7 +130,7 @@ export default function WizardChatModal({
     setLastError(null);
 
     try {
-      const response = await fetch('/api/ai/chat', {
+      const response = await apiFetch('/api/ai/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -262,7 +263,7 @@ export default function WizardChatModal({
     }
     setReportingId(msg.id);
     try {
-      const res = await fetch('/api/ai/report', {
+      const res = await apiFetch('/api/ai/report', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

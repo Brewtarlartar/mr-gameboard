@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { apiFetch } from '@/lib/api/client';
 import Image from 'next/image';
 import { Search, Loader2, X, History, Clock, Plus, Link2 } from 'lucide-react';
 import {
@@ -71,7 +72,7 @@ export default function GameSearch({ onSelectGame }: GameSearchProps) {
     setBggError(null);
 
     try {
-      const res = await fetch('/api/bgg/add', {
+      const res = await apiFetch('/api/bgg/add', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ bggId }),

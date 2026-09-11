@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
+import { apiFetch } from '@/lib/api/client';
 import Image from 'next/image';
 import { Loader2, Filter } from 'lucide-react';
 import { useGameStore } from '@/lib/store/gameStore';
@@ -80,7 +81,7 @@ export default function LibraryPage() {
     setIsAddingGame(true);
     setAddError(null);
     try {
-      const response = await fetch(`/api/bgg/game/${bggId}`);
+      const response = await apiFetch(`/api/bgg/game/${bggId}`);
       if (!response.ok) {
         throw new Error(`Server responded ${response.status}`);
       }

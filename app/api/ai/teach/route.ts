@@ -8,6 +8,7 @@ import type { TeachPlan, TeachChapter, TeachPlayer } from '@/lib/ai/types';
 import { checkRateLimit, rateLimitResponse } from '@/lib/rate-limit';
 import { AI_LIMITS, clampString } from '@/lib/ai/limits';
 import { createClient as createSupabaseServerClient } from '@/lib/supabase/server';
+import { getRouteUser } from '@/lib/supabase/routeAuth';
 
 const FILES_BETA = 'files-api-2025-04-14';
 
@@ -50,8 +51,8 @@ function extractJson(text: string): TeachPlan | null {
 
 export async function POST(req: NextRequest) {
   const supabase = createSupabaseServerClient();
-  const { data: userData } = await supabase.auth.getUser();
-  const gate = await checkRateLimit(req, 'teach', userData.user?.id ?? null);
+  const user = await getRouteUser(req); // cookie (web) or bearer (native shell)
+  const gate = await checkRateLimit(req, 'teach', user?.id ?? null);
   if (!gate.ok) return rateLimitResponse(gate);
 
   let body: TeachRequestBody;
@@ -84,7 +85,7 @@ export async function POST(req: NextRequest) {
   // Rulebook attachment (full PDF in context) is signed-in-only, matching chat.
   const [hydrated, rulebook] = await Promise.all([
     bggId ? buildHydratedGameContext(supabase, bggId, extras) : Promise.resolve(null),
-    bggId && userData.user ? getRulebookAttachment(supabase, bggId) : Promise.resolve(null),
+    bggId && user ? getRulebookAttachment(supabase, bggId) : Promise.resolve(null),
   ]);
   const context = hydrated || buildGameContext(extras);
   const userPrompt = `${context}\n\nTeach this specific group how to play. Return only the JSON object described in the system prompt.`;

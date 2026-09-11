@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { apiFetch } from '@/lib/api/client';
 import {
   Search,
   Plus,
@@ -130,7 +131,7 @@ export default function DiscoverGames() {
     setBggSearching(true);
     const timer = setTimeout(async () => {
       try {
-        const res = await fetch(`/api/bgg/search?query=${encodeURIComponent(q)}`);
+        const res = await apiFetch(`/api/bgg/search?query=${encodeURIComponent(q)}`);
         if (!res.ok) {
           if (!cancelled) setBggExtras([]);
           return;

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { apiFetch } from '@/lib/api/client';
 import { createPortal } from 'react-dom';
 import { useDialogA11y } from '@/lib/hooks/useDialogA11y';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -107,7 +108,7 @@ export default function GameDetailModal({
     setIsLoadingDetails(true);
     setDetailsError(null);
     try {
-      const response = await fetch(`/api/bgg/details/${gameId}`);
+      const response = await apiFetch(`/api/bgg/details/${gameId}`);
       if (!response.ok) throw new Error('Failed to fetch game details');
       const data = await response.json();
       setLiveDetails(data);

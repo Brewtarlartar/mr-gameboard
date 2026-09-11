@@ -1,8 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Capacitor builds need a static export. `npm run cap:sync` sets CAPACITOR_BUILD=1.
-  // API routes (BGG proxy, discover) are web-only — migrate to client fetches before enabling.
-  ...(process.env.CAPACITOR_BUILD === '1' ? { output: 'export' } : {}),
+  // Capacitor builds need a static export. `npm run cap:build` (scripts/cap-build.js)
+  // sets CAPACITOR_BUILD=1 and temporarily excludes the server-only routes
+  // (app/api/*, app/auth/callback) — the native shell calls the hosted Vercel API.
+  // trailingSlash makes every route export folder/index.html so deep links and
+  // hard reloads resolve to a real file inside the shell.
+  ...(process.env.CAPACITOR_BUILD === '1' ? { output: 'export', trailingSlash: true } : {}),
   images: {
     // Use unoptimized images - allows any source without proxy issues
     unoptimized: true,
