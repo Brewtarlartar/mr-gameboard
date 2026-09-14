@@ -23,6 +23,7 @@ import { Game } from '@/types/game';
 import { decodeHtmlEntities } from '@/lib/text/decodeHtml';
 import { readApiError } from '@/lib/ai/readApiError';
 import { getPreferences } from '@/lib/storage';
+import { requestAiConsent } from '@/lib/ai/consent';
 
 interface CompareGamesModalProps {
   isOpen: boolean;
@@ -108,6 +109,9 @@ export default function CompareGamesModal({ isOpen, onClose, games: allGames }: 
   };
 
   const generateGameAnalysis = async (game: Game) => {
+    // Apple 5.1.2(i): nothing reaches Anthropic until the reader agrees.
+    if (!(await requestAiConsent())) return;
+
     setGameAnalyses((prev) =>
       new Map(prev).set(game.id, {
         gameId: game.id,

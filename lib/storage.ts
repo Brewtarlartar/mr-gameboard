@@ -25,6 +25,8 @@ export interface UserPreferences {
   theme?: string;
   notifications?: boolean;
   aiVoice?: 'wizard' | 'plain';
+  /** ISO timestamp of when the reader agreed to their questions going to Anthropic. */
+  aiConsentAt?: string;
 }
 
 // Get all games in library

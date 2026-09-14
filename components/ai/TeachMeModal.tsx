@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Loader2, ChevronLeft, ChevronRight, Swords, MessageCircle, Plus, Minus } from 'lucide-react';
 import { useAIStore, teachKey } from '@/lib/store/aiStore';
 import { readApiError } from '@/lib/ai/readApiError';
+import { requestAiConsent } from '@/lib/ai/consent';
 import { getPreferences } from '@/lib/storage';
 import type { TeachPlan, TeachPlayer } from '@/lib/ai/types';
 import GamePicker from './GamePicker';
@@ -129,6 +130,9 @@ export default function TeachMeModal({
       setError(null);
       return;
     }
+
+    // Apple 5.1.2(i): nothing reaches Anthropic until the reader agrees.
+    if (!(await requestAiConsent())) return;
 
     setPlan(null);
     setChapterIndex(0);
