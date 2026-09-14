@@ -26,6 +26,11 @@ const config: CapacitorConfig = {
       launchAutoHide: true,
       launchShowDuration: 800,
     },
+    // The app is always dark, so system-bar icons must be light regardless of
+    // the phone's theme (DEFAULT follows the OS and goes invisible in light mode).
+    SystemBars: {
+      style: 'DARK',
+    },
   },
 };
 
