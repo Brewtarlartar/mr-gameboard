@@ -4,6 +4,9 @@ type SupportedStream =
   | ReturnType<Anthropic['messages']['stream']>
   | ReturnType<Anthropic['beta']['messages']['stream']>;
 
+export const AI_UNAVAILABLE_MESSAGE =
+  'The Oracle cannot be reached right now. This is on our end, not yours \u2014 please try again later.';
+
 export function textStreamToResponse(
   stream: SupportedStream,
   extraHeaders?: Record<string, string>,
@@ -11,6 +14,7 @@ export function textStreamToResponse(
   const encoder = new TextEncoder();
   const readable = new ReadableStream<Uint8Array>({
     async start(controller) {
+      let sentText = false;
       try {
         for await (const event of stream) {
           if (
@@ -18,11 +22,20 @@ export function textStreamToResponse(
             event.delta.type === 'text_delta'
           ) {
             controller.enqueue(encoder.encode(event.delta.text));
+            sentText = true;
           }
         }
         controller.close();
       } catch (err) {
-        controller.error(err);
+        // The upstream call can fail before the first token (exhausted quota,
+        // provider outage) or midway through an answer. Erroring the stream
+        // surfaces as a blank 500 page, so close with a readable sentence
+        // instead — appended on its own line if an answer had already begun.
+        console.error('[ai] stream failed', err);
+        controller.enqueue(
+          encoder.encode((sentText ? '\n\n' : '') + AI_UNAVAILABLE_MESSAGE),
+        );
+        controller.close();
       }
     },
   });
