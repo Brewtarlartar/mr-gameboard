@@ -6,6 +6,7 @@ import { buildHydratedGameContext } from '@/lib/ai/gameContext';
 import { getRulebookAttachment } from '@/lib/ai/rulebook_attach';
 import type { TeachPlan, TeachChapter, TeachPlayer } from '@/lib/ai/types';
 import { checkRateLimit, rateLimitResponse } from '@/lib/rate-limit';
+import { AI_UNAVAILABLE_MESSAGE } from '@/lib/ai/stream';
 import { AI_LIMITS, clampString } from '@/lib/ai/limits';
 import { createClient as createSupabaseServerClient } from '@/lib/supabase/server';
 import { getRouteUser } from '@/lib/supabase/routeAuth';
@@ -94,33 +95,41 @@ export async function POST(req: NextRequest) {
 
   let text: string;
 
-  if (rulebook) {
-    const firstContent: Anthropic.Beta.BetaContentBlockParam[] = [
-      {
-        type: 'document',
-        source: { type: 'file', file_id: rulebook.fileId },
-        cache_control: { type: 'ephemeral' },
-      },
-      { type: 'text', text: userPrompt },
-    ];
-    const response = await client.beta.messages.create({
-      model: MODELS.teach,
-      max_tokens: 4096,
-      system: teachSystem(resolvedVoice, true),
-      messages: [{ role: 'user', content: firstContent }],
-      betas: [FILES_BETA],
-    });
-    const textBlock = response.content.find((b) => b.type === 'text');
-    text = textBlock && textBlock.type === 'text' ? textBlock.text : '';
-  } else {
-    const response = await client.messages.create({
-      model: MODELS.teach,
-      max_tokens: 4096,
-      system: teachSystem(resolvedVoice, false),
-      messages: [{ role: 'user', content: userPrompt }],
-    });
-    const textBlock = response.content.find((b) => b.type === 'text');
-    text = textBlock && textBlock.type === 'text' ? textBlock.text : '';
+  try {
+    if (rulebook) {
+      const firstContent: Anthropic.Beta.BetaContentBlockParam[] = [
+        {
+          type: 'document',
+          source: { type: 'file', file_id: rulebook.fileId },
+          cache_control: { type: 'ephemeral' },
+        },
+        { type: 'text', text: userPrompt },
+      ];
+      const response = await client.beta.messages.create({
+        model: MODELS.teach,
+        max_tokens: 4096,
+        system: teachSystem(resolvedVoice, true),
+        messages: [{ role: 'user', content: firstContent }],
+        betas: [FILES_BETA],
+      });
+      const textBlock = response.content.find((b) => b.type === 'text');
+      text = textBlock && textBlock.type === 'text' ? textBlock.text : '';
+    } else {
+      const response = await client.messages.create({
+        model: MODELS.teach,
+        max_tokens: 4096,
+        system: teachSystem(resolvedVoice, false),
+        messages: [{ role: 'user', content: userPrompt }],
+      });
+      const textBlock = response.content.find((b) => b.type === 'text');
+      text = textBlock && textBlock.type === 'text' ? textBlock.text : '';
+    }
+  } catch (err) {
+    // Unlike the streaming routes this call is awaited, so an upstream failure
+    // (exhausted quota, provider outage) would otherwise throw out of the
+    // handler and render a blank 500 page.
+    console.error('[ai] teach failed', err);
+    return Response.json({ message: AI_UNAVAILABLE_MESSAGE }, { status: 503 });
   }
 
   const plan = extractJson(text);
