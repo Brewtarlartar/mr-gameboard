@@ -10,6 +10,7 @@ import TomeLogo from '@/components/layout/TomeLogo';
 import MobileBottomNav from '@/components/mobile/MobileBottomNav';
 import SessionSync from '@/components/auth/SessionSync';
 import NativeAuthListener from '@/components/native/NativeAuthListener';
+import AiConsentDialog from '@/components/ai/AiConsentDialog';
 import { useMobile, useHapticFeedback } from '@/lib/hooks/useMobile';
 
 const useIsomorphicLayoutEffect =
@@ -316,6 +317,7 @@ export default function MainLayout({
     <div className="min-h-screen flex flex-col">
       <SessionSync />
       <NativeAuthListener />
+      <AiConsentDialog />
       <nav className="hidden md:block fixed top-0 left-0 right-0 z-50 bg-stone-900/75 backdrop-blur-lg border-b border-amber-900/40 shadow-lg safe-area-pt">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-14">

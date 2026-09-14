@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Wand2, Loader2, Send } from 'lucide-react';
 import { useAIStore } from '@/lib/store/aiStore';
 import { readApiError } from '@/lib/ai/readApiError';
+import { requestAiConsent } from '@/lib/ai/consent';
 import { getPreferences } from '@/lib/storage';
 import GamePicker from './GamePicker';
 import MarkdownMessage from './MarkdownMessage';
@@ -91,6 +92,9 @@ export default function StrategyModal({
       return;
     }
 
+    // Apple 5.1.2(i): nothing reaches Anthropic until the reader agrees.
+    if (!(await requestAiConsent())) return;
+
     setContent('');
     setError(null);
     setIsStreaming(true);
@@ -157,6 +161,8 @@ export default function StrategyModal({
   const handleFollowUp = async () => {
     const text = followUpInput.trim();
     if (!text || followUpStreaming || !content) return;
+    // Apple 5.1.2(i): nothing reaches Anthropic until the reader agrees.
+    if (!(await requestAiConsent())) return;
 
     const userMsg: FollowUpMessage = { id: crypto.randomUUID(), role: 'user', content: text };
     const asstMsg: FollowUpMessage = { id: crypto.randomUUID(), role: 'assistant', content: '' };

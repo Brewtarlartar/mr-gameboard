@@ -8,6 +8,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Send, Trash2, Loader2, RotateCcw, History, BookOpen, BookOpenCheck, Flag } from 'lucide-react';
 import { useAIStore, type WizardMessage } from '@/lib/store/aiStore';
 import { readApiError } from '@/lib/ai/readApiError';
+import { requestAiConsent } from '@/lib/ai/consent';
 import { getPreferences } from '@/lib/storage';
 import {
   pushWizardConversation,
@@ -177,6 +178,8 @@ export default function WizardChatModal({
   const handleSend = async () => {
     const text = input.trim();
     if (!text || isStreaming) return;
+    // Apple 5.1.2(i): nothing reaches Anthropic until the reader agrees.
+    if (!(await requestAiConsent())) return;
 
     const userMsg: WizardMessage = {
       id: crypto.randomUUID(),
@@ -211,6 +214,8 @@ export default function WizardChatModal({
     if (isStreaming || !conversationId) return;
     const lastUser = [...wizardMessages].reverse().find((m) => m.role === 'user');
     if (!lastUser) return;
+    // Apple 5.1.2(i): nothing reaches Anthropic until the reader agrees.
+    if (!(await requestAiConsent())) return;
     const upTo = wizardMessages.findIndex((m) => m.id === lastUser.id);
     const history = wizardMessages
       .slice(0, upTo + 1)
